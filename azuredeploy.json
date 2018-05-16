@@ -76,7 +76,7 @@
         }
     },
     "variables": {
-        "ArtifactsBase": "https://mjsscripts.blob.core.windows.net/test18a/",
+        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/master/mdcs-on-azure/",
         "templatesUrl": "[variables('ArtifactsBase')]",
         "scriptsUrl": "[concat(variables('ArtifactsBase'), 'scripts/')]",
         "headnodeMachineName": "headnode",
