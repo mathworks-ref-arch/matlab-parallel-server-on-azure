@@ -81,14 +81,14 @@
         "scriptsUrl": "[concat(variables('ArtifactsBase'), 'scripts/')]",
         "headnodeMachineName": "headnode",
         "vmssName": "workers",
-        "publisher": "mathworks-deployment",
-        "offer": "mdcsmjs",
-        "sku": "mdcsmjsr2018a",
+        "publisher": "mathworks-inc",
+        "offer": "mdcs-ref-arch-18a-win",
+        "sku": "mdcs-ref-arch-18a-win-sku",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
             "sku": "[variables('sku')]",
-            "version": "1.1.0"
+            "version": "latest"
         },
         "plan": {
             "name": "[variables('sku')]",
