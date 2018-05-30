@@ -130,8 +130,8 @@
             "[concat(variables('scriptsUrl'), 'createFileShare.ps1')]",
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
-        "scriptExe": "[concat('./scripts/', variables('startScript'))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'))]",
+        "scriptExe": "[concat('./', variables('startScript'))]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('startScript'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'))]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
