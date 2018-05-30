@@ -76,7 +76,7 @@
         }
     },
     "variables": {
-        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/master/mdcs-on-azure/",
+        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/mdcs-on-azure/master/",
         "templatesUrl": "[variables('ArtifactsBase')]",
         "scriptsUrl": "[concat(variables('ArtifactsBase'), 'scripts/')]",
         "headnodeMachineName": "headnode",
