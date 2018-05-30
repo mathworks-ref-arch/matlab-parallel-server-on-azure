@@ -25,6 +25,7 @@ Click the **Deploy to Azure** button below to deploy the cloud resources on Azur
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmdcs-on-azure%2Fmaster%2Fazuredeploy.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
+
 > Cluster Platform: Windows Server 2016
 
 > MATLAB Release: R2018a
