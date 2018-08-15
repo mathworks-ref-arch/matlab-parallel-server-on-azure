@@ -1,0 +1,372 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "clusterName": {
+            "type": "string",
+        },
+        "numWorkerNodes": {
+            "type": "int",
+        },
+        "numWorkersPerNode": {
+            "type": "int",
+        },
+        "headnodeInstanceType": {
+            "type": "string",
+        },
+        "workerInstanceType": {
+            "type": "string",
+        },
+        "databaseVolumeSize": {
+            "type": "int",
+        },
+        "clientIPAddress": {
+            "type": "string",
+        },
+        "adminUsername": {
+            "type": "string",
+        },
+        "adminPassword": {
+            "type": "securestring",
+        },
+        "subnetId": {
+            "type": "string",
+        },
+        "ArtifactsBase": {
+            "type": "string",
+        },
+        "providerID": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "headnodeMachineName": "headnode",
+        "vmssName": "workers",
+        "publisher": "mathworks-inc",
+        "offer": "mdcs-ref-arch-18a-win",
+        "sku": "mdcs-ref-arch-18a-win-sku",
+        "imageReference": {
+            "publisher": "[variables('publisher')]",
+            "offer": "[variables('offer')]",
+            "sku": "[variables('sku')]",
+            "version": "1.1.0"
+        },
+        "plan": {
+            "name": "[variables('sku')]",
+            "publisher": "[variables('publisher')]",
+            "product": "[variables('offer')]"
+        },
+        "osDisk": {
+            "createOption": "fromImage",
+            "managedDisk": {
+                "storageAccountType": "Standard_LRS"
+            }
+        },
+        "storageProfileWithoutDisk": {
+            "imageReference": "[variables('imageReference')]",
+            "osDisk": "[variables('osDisk')]"
+        },
+        "storageProfileWithDisk": {
+            "imageReference": "[variables('imageReference')]",
+            "osDisk": "[variables('osDisk')]",
+            "dataDisks": [
+                {
+                    "name": "database",
+                    "diskSizeGB": "[parameters('databaseVolumeSize')]",
+                    "lun": 0,
+                    "createOption": "Empty",
+                    "caching": "None"
+                }
+            ]
+        },
+        "publicIPPostfix": "pub",
+        "headnodeIPName": "[concat(variables('headnodeMachineName'), variables('publicIPPostfix'))]",
+        "dnsLabelPrefix": "[concat('azure-', uniqueString(resourceGroup().id))]",
+        "publicIpTimeout": "20",
+        "networkInterfacePostfix": "nic",
+        "publicIpConfigPostfix": "ipConfig",
+        "networkSecurityGroupName": "nsg",
+        "totalPorts": "[add(7, mul(4, parameters('numWorkersPerNode')))]",
+        "startPort": 27350,
+        "finalPort": "[add(variables('startPort'), variables('totalPorts'))]",
+        "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'storage')]",
+        "storageAccountType": "Standard_LRS",
+        "scriptsUrl": "[concat(parameters('ArtifactsBase'), 'scripts/')]",
+        "startScript": "startmjs.ps1",
+        "fileUris": [
+            "[concat(variables('scriptsUrl'), variables('startScript'))]",
+            "[concat(variables('scriptsUrl'), 'createFileShare.ps1')]",
+            "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
+        ],
+        "scriptExe": "[concat('./', variables('startScript'))]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'))]",
+        "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
+        "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
+        "tagsForAll": {
+            "provider": "[parameters('providerID')]"
+        }
+    },
+    "resources": [
+        {
+            "name": "[variables('storageAccountName')]",
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2017-06-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tagsForAll')]",
+            "sku": {
+                "name": "[variables('storageAccountType')]"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "name": "[variables('networkSecurityGroupName')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2017-03-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "default-allow-rdp",
+                        "properties": {
+                            "priority": 1000,
+                            "sourceAddressPrefix": "[parameters('clientIPAddress')]",
+                            "protocol": "Tcp",
+                            "destinationPortRange": "3389",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*"
+                        }
+                    },
+                    {
+                        "name": "mathworks-job-scheduler-inbound",
+                        "properties": {
+                            "priority": 1010,
+                            "sourceAddressPrefix": "[parameters('clientIPAddress')]",
+                            "protocol": "Tcp",
+                            "destinationPortRange": "[concat(variables('startPort'), '-', variables('finalPort'))]",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "*"
+                        }
+                    },
+                    {
+                        "name": "allow-internal-traffic",
+                        "properties": {
+                            "priority": 1020,
+                            "sourceAddressPrefix": "VirtualNetwork",
+                            "protocol": "Tcp",
+                            "destinationPortRange": "*",
+                            "access": "Allow",
+                            "direction": "Inbound",
+                            "sourcePortRange": "*",
+                            "destinationAddressPrefix": "VirtualNetwork"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[variables('headnodeIPName')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2017-06-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[concat(variables('headnodeMachineName'), variables('dnsLabelPrefix'))]"
+                },
+                "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
+            }
+        },
+        {
+            "name": "[concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2017-03-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/', variables('headnodeIPName'))]",
+                "[concat('Microsoft.Network/networkSecurityGroups/', variables('networkSecurityGroupName'))]"
+            ],
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[parameters('subnetId')]"
+                            },
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIpAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('headnodeIPName'))]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                }
+            }
+        },
+        {
+            "name": "[variables('headnodeMachineName')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2017-03-30",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/networkInterfaces/', variables('headnodeMachineName'), variables('networkInterfacePostfix'))]"
+            ],
+            "tags": "[variables('tagsForAll')]",
+            "plan": "[variables('plan')]",
+            "properties": {
+                "osProfile": {
+                    "computerName": "[variables('headnodeMachineName')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]",
+                    "windowsConfiguration": {
+                        "provisionVmAgent": "true"
+                    }
+                },
+                "hardwareProfile": {
+                    "vmSize": "[parameters('headnodeInstanceType')]"
+                },
+                "storageProfile": "[if(greater(parameters('databaseVolumeSize'), 0), variables('storageProfileWithDisk'), variables('storageProfileWithoutDisk'))]",
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('headnodeMachineName'), variables('networkInterfacePostfix')))]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "apiVersion": "2017-03-30",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(variables('headnodeMachineName'), '/Installation')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', variables('headnodeMachineName'))]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+            ],
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.5",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": "[variables('fileUris')]"
+                },
+                "protectedSettings": {
+                    "commandToExecute": "[concat(variables('installHeadnodeCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))).ipConfigurations[0].properties.privateIPAddress)]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('vmssName')]",
+            "apiVersion": "2017-03-30",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIpAddresses/', variables('headnodeIPName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+            ],
+            "tags": "[variables('tagsForAll')]",
+            "sku": {
+                "name": "[parameters('workerInstanceType')]",
+                "tier": "Standard",
+                "capacity": "[parameters('numWorkerNodes')]"
+            },
+            "plan": "[variables('plan')]",
+            "properties": {
+                "overprovision": false,
+                "upgradepolicy": {
+                    "mode": "Automatic"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('vmssName')]",
+                        "adminUsername": "[parameters('adminUsername')]",
+                        "adminPassword": "[parameters('adminPassword')]",
+                        "windowsConfiguration": {
+                            "provisionVmAgent": true
+                        }
+                    },
+                    "storageProfile": "[variables('storageProfileWithoutDisk')]",
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(variables('vmssName'), variables('networkInterfacePostfix'))]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(variables('vmssName'), variables('publicIpConfigPostfix'))]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[parameters('subnetId')]"
+                                                },
+                                                "publicIpAddressConfiguration": {
+                                                    "name": "[variables('publicIpPostfix')]",
+                                                    "properties": {
+                                                        "publicIpAllocationMethod": "Static",
+                                                        "dnsSettings": {
+                                                            "domainNameLabel": "[concat(variables('vmssName'), variables('dnsLabelPrefix'))]"
+                                                        },
+                                                        "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "networkSecurityGroup": {
+                                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                        {
+                            "name": "[concat(variables('vmssName'), 'installation')]",
+                            "properties": {
+                                "publisher": "Microsoft.Compute",
+                                "type": "CustomScriptExtension",
+                                "typeHandlerVersion": "1.5",
+                                "autoUpgradeMinorVersion": true,
+                                "settings": {
+                                    "fileUris": "[variables('fileUris')]"
+                                },
+                                "protectedSettings": {
+                                    "commandToExecute": "[concat(variables('installWorkerCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))).ipConfigurations[0].properties.privateIPAddress)]"
+                                }
+                            }
+                        }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "name": "[concat('pid-', toLower(parameters('providerID')))]",
+            "apiVersion": "2017-05-10",
+            "type": "Microsoft.Resources/deployments",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "resources": [ ]
+                }
+            }
+        }
+    ]
+}

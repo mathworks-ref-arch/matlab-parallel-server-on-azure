@@ -96,6 +96,24 @@ If your resource group fails to deploy, check the Deployments section of the Res
 
 If the resource group deployed successfully but you are unable to validate the cluster you may need to view the logs on the instances to diagnose the error. The deployment logs are output to C:/Windows/Temp/MDCSLog*.txt on the instance nodes. The MJS logs are output to C:/Windows/Temp/MDCE/Log.
 
+## Use Existing Virtual Network
+You can launch the reference architecture within an existing virtual network and subnet using the azuredeploy-existing-vnet.json template. 
+
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmdcs-on-azure%2Fmaster%2Fazuredeploy-existing-vnet.json" target="_blank">
+    <img src="http://azuredeploy.net/deploybutton.png"/>
+</a>
+
+> Cluster Platform: Windows Server 2016
+
+> MATLAB Release: R2018a
+
+This template requires the following two additional parameters:
+
+| Parameter label                                    | Description 
+| -------------------------------------------------- | ----------- 
+| **Virtual Network Resource ID** (required)             | The Resource ID of an existing virtual network to deploy your cluster into.
+| **Subnet Name** (required)                             | The name of an existing subnet within your virtual network to deploy your cluster into.
+
 ## Learn About MJS Cluster Architecture
 
 Parallel Computing Toolbox and MATLAB Distributed Computing Server software let you solve computationally and data-intensive programs using MATLAB and Simulink on computer clusters, clouds, and grids. Parallel processing constructs such as parallel-for loops and code blocks, distributed arrays, parallel numerical algorithms, and message-passing functions let you implement task-parallel and data-parallel algorithms at a high level in MATLAB. To learn more see the documentation: [Parallel Computing Toolbox](https://www.mathworks.com/help/distcomp) and [MATLAB Distributed Computing Server](https://www.mathworks.com/help/mdce). 

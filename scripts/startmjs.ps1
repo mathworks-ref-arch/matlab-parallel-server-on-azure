@@ -226,7 +226,7 @@ Echo "Current user is: $User"
 # Log node type information
 Echo "VM role is: $Role"
 
-$ReleaseDate = "20180530"
+$ReleaseDate = "20180815"
 $MHLMContext = "MDCS_Azure_${ReleaseDate}"
 Echo "setenv MHLM_CONTEXT=$MHLMContext"
 [Environment]::SetEnvironmentVariable("MHLM_CONTEXT", $MHLMContext, "Machine")
@@ -301,6 +301,7 @@ If (0 -eq $Role.ToLower().CompareTo("headnode")) {
         $CreateFileShareScript = Join-Path $PSScriptRoot "createFileShare.ps1"
         Echo "Creating file share: $FileShareName"
         . $CreateFileShareScript -StorageAccountName $StorageAccountName -StorageAccountKey $StorageAccountKey -ShareName $FileShareName
+        Echo "Created file share: $FileShareName"
     } Else {
         Echo "Using existing file share: $FileShareName"
     }
@@ -310,10 +311,12 @@ If (0 -eq $Role.ToLower().CompareTo("headnode")) {
 }
 
 # Mount File Share
+Echo "Mounting File Share: $FileShareName"
 . cmdkey /add:$FileShareHost /user:Azure\$StorageAccountName /pass:$StorageAccountKey
 . net use K: /delete
 . net use K: $MountPath
 [Environment]::SetEnvironmentVariable("SHARED_DRIVE", $MountPath, "Machine")
+Echo "Mounted File Share: $FileShareName"
 
 #******************************************************************************
 # Create shared files
