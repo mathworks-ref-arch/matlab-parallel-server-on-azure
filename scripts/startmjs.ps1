@@ -226,7 +226,7 @@ Echo "Current user is: $User"
 # Log node type information
 Echo "VM role is: $Role"
 
-$ReleaseDate = "20180815"
+$ReleaseDate = "20190926"
 $MHLMContext = "MDCS_Azure_${ReleaseDate}"
 Echo "setenv MHLM_CONTEXT=$MHLMContext"
 [Environment]::SetEnvironmentVariable("MHLM_CONTEXT", $MHLMContext, "Machine")

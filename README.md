@@ -6,7 +6,7 @@ Before starting, you will need the following:
 
 - MATLAB Distributed Computing Server™ license. For more information, see [Configuring License in the Cloud](https://www.mathworks.com/support/cloud/configure-matlab-distributed-computing-server-licensing-on-the-cloud.html).
 
-- MATLAB® R2018a and Parallel Computing Toolbox™ on your desktop.
+- MATLAB® R2018b and Parallel Computing Toolbox™ on your desktop.
 
 - An Azure™ account.
 
@@ -28,7 +28,9 @@ Click the **Deploy to Azure** button below to deploy the cloud resources on Azur
 
 > Cluster Platform: Windows Server 2016
 
-> MATLAB Release: R2018a
+> MATLAB Release: R2018b
+
+For other releases, see [How do I launch a template that uses a previous MATLAB release?](#how-do-i-launch-a-template-that-uses-a-previous-matlab-release)
 
 ## Step 2. Configure the Cloud Resources
 After you click the Deploy To Azure button above, the “Custom deployment” page will open in your browser where you can configure the parameters. It is easier to complete the steps if you position these instructions and the Azure Portal window side-by-side.
@@ -105,7 +107,7 @@ You can launch the reference architecture within an existing virtual network and
 
 > Cluster Platform: Windows Server 2016
 
-> MATLAB Release: R2018a
+> MATLAB Release: R2018b
 
 This template requires the following two additional parameters:
 
@@ -113,6 +115,11 @@ This template requires the following two additional parameters:
 | -------------------------------------------------- | ----------- 
 | **Virtual Network Resource ID** (required)             | The Resource ID of an existing virtual network to deploy your cluster into.
 | **Subnet Name** (required)                             | The name of an existing subnet within your virtual network to deploy your cluster into.
+
+## How do I launch a template that uses a previous MATLAB release?
+| Release | Windows Server 2016 VM | Windows Server 2016 VM using existing Virtual Network |
+|---------------|------------------------|-----------------|
+| MATLAB R2018a | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmdcs-on-azure%2Fmaster%2Fazuredeploy-R2018a.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a> | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmdcs-on-azure%2Fmaster%2Fazuredeploy-existing-vnet-R2018a.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a>|
 
 ## Learn About MJS Cluster Architecture
 
@@ -157,4 +164,3 @@ Provide suggestions for additional features or capabilities using the following 
 
 # Technical Support
 Email: `cloud-support@mathworks.com`
-

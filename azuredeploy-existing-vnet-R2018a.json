@@ -72,32 +72,28 @@
             "metadata": {
                 "description": "Admin password."
             }
-        }
+        },
+        "virtualNetworkResourceID": {
+            "type": "string",
+            "metadata": {
+                "description": "The Resource ID of an existing virtual network to deploy your cluster into."
+            }
+        },
+        "subnetName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of an existing subnet within your virtual network to deploy your cluster into."
+            }
+        },
     },
     "variables": {
-        "matlabRelease": "R2018b",
+        "matlabRelease": "R2018a",
         "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/mdcs-on-azure/master/",
         "templatesUrl": "[concat(variables('ArtifactsBase'), 'templates/')]",
         "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
+        "subnetId": "[concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName'))]",
     },
     "resources": [
-        {
-            "name": "deploy-vnet",
-            "type": "Microsoft.Resources/deployments",
-            "apiVersion": "2017-05-10",
-            "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[concat(variables('templatesUrl'), 'deploy-vnet.json')]",
-                    "contentVersion": "1.0.0.0"
-                },
-                "parameters": {
-                    "providerID": {
-                        "value": "[variables('providerID')]"
-                    }
-                }
-            }
-        },
         {
             "name": "deploy-cluster",
             "type": "Microsoft.Resources/deployments",
@@ -137,7 +133,7 @@
                         "value": "[parameters('adminPassword')]"
                     },
                     "subnetId": {
-                        "value": "[reference('deploy-vnet').outputs.subnetId.value]"
+                        "value": "[variables('subnetId')]"
                     },
                     "matlabRelease": {
                         "value": "[variables('matlabRelease')]"
@@ -167,15 +163,5 @@
                 }
             }
         }
-    ],
-    "outputs": {
-        "subnetName": {
-            "value": "[reference('deploy-vnet').outputs.subnetName.value]",
-            "type": "string"
-        },
-        "virtualNetworkResourceID": {
-            "value": "[reference('deploy-vnet').outputs.virtualNetworkId.value]",
-            "type": "string"
-        }
-    }
+    ]
 }

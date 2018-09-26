@@ -75,7 +75,7 @@
         }
     },
     "variables": {
-        "matlabRelease": "R2018b",
+        "matlabRelease": "R2018a",
         "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/mdcs-on-azure/master/",
         "templatesUrl": "[concat(variables('ArtifactsBase'), 'templates/')]",
         "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",

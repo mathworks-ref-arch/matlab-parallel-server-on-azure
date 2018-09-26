@@ -32,6 +32,9 @@
         "subnetId": {
             "type": "string",
         },
+        "matlabRelease": {
+            "type": "string"
+        },
         "ArtifactsBase": {
             "type": "string",
         },
@@ -44,12 +47,22 @@
         "vmssName": "workers",
         "publisher": "mathworks-inc",
         "offer": "mdcs-ref-arch-18a-win",
-        "sku": "mdcs-ref-arch-18a-win-sku",
+        "sku18a": {
+            "sku": "mdcs-ref-arch-18a-win-sku",
+            "version": "1.1.0"
+        },
+        "sku18b": {
+            "sku": "mdcs-ref-arch-18b-win-sku",
+            "version": "1.0.0"
+        },
+        "skuPair": "[if(equals(parameters('matlabRelease'), 'R2018a'), variables('sku18a'), variables('sku18b'))]",
+        "sku":"[variables('skuPair').sku]",
+        "version":"[variables('skuPair').version]",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
             "sku": "[variables('sku')]",
-            "version": "1.1.0"
+            "version": "[variables('version')]"
         },
         "plan": {
             "name": "[variables('sku')]",
@@ -59,7 +72,7 @@
         "osDisk": {
             "createOption": "fromImage",
             "managedDisk": {
-                "storageAccountType": "Standard_LRS"
+                "storageAccountType": "Premium_LRS"
             }
         },
         "storageProfileWithoutDisk": {

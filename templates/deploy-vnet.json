@@ -56,6 +56,14 @@
         "subnetId": {
             "value": "[reference(concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName')), '2017-03-01').subnets[0].id]",
             "type": "string"
+        },
+        "subnetName": {
+            "value": "[reference(concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName')), '2017-03-01').subnets[0].name]",
+            "type": "string"
+        },
+        "virtualNetworkId": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+            "type": "string"
         }
     }
 }
