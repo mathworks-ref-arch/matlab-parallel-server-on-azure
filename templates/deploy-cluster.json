@@ -53,7 +53,7 @@
         },
         "sku18b": {
             "sku": "mdcs-ref-arch-18b-win-sku",
-            "version": "1.0.0"
+            "version": "1.1.0"
         },
         "skuPair": "[if(equals(parameters('matlabRelease'), 'R2018a'), variables('sku18a'), variables('sku18b'))]",
         "sku":"[variables('skuPair').sku]",
