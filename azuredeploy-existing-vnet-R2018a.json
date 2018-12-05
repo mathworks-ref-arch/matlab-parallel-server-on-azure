@@ -95,8 +95,8 @@
         "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
         "publisher": "mathworks-inc",
         "offer": "mdcs-ref-arch-18a-win",
-        "sku": "null",
-        "version": "null",
+        "sku": "mdcs-ref-arch-18a-win-sku",
+        "version": "1.1.0",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
