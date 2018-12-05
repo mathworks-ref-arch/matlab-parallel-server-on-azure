@@ -4,60 +4,115 @@
     "parameters": {
         "clusterName": {
             "type": "string",
+            "defaultValue": "myCluster",
+            "minLength": 1,
+            "maxLength": 61,
+            "metadata": {
+                "description": "Name to give to this MJS."
+            }
         },
         "numWorkerNodes": {
             "type": "int",
+            "defaultValue": 2,
+            "minValue": 0,
+            "maxValue": 1000,
+            "metadata": {
+                "description": "Number of worker nodes to start up."
+            }
         },
         "numWorkersPerNode": {
             "type": "int",
+            "defaultValue": 2,
+            "minValue": 1,
+            "metadata": {
+                "description": "Number of workers per node to start up."
+            }
         },
         "headnodeInstanceType": {
             "type": "string",
+            "defaultValue": "Standard_D2s_v3",
+            "minLength": 1,
+            "metadata": {
+                "description": "Azure instance type, see https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes."
+            }
         },
         "workerInstanceType": {
             "type": "string",
+            "defaultValue": "Standard_D2s_v3",
+            "minLength": 1,
+            "metadata": {
+                "description": "Azure instance type, see https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes."
+            }
         },
         "databaseVolumeSize": {
             "type": "int",
+            "defaultValue": 100,
+            "minValue": 0,
+            "maxValue": 4095,
+            "metadata": {
+                "description": "The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database."
+            }
         },
         "clientIPAddress": {
             "type": "string",
+            "minLength": 1,
+            "metadata": {
+                "description": "The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value <your_public_ip_address>/32 to restrict access to only your computer."
+            }
+        },
+        "licenseManagerHostName": {
+            "type": "string",
+            "defaultValue": "netlm-server",
+            "metadata": {
+                "description": "The hostname or ip address of the virtual machine hosting your network license manager for MATLAB. If deployed in a different virtual network, ensure that the hostname or address can be correctly resolved."
+            }
+        },
+        "licenseManagerPort": {
+            "type": "int",
+            "defaultValue": 27000,
+            "minValue": 0,
+            "maxValue": 65535 ,
+            "metadata": {
+                "description": "The port to use when connecting to your network license manager for MATLAB."
+            }
         },
         "adminUsername": {
             "type": "string",
+            "defaultValue": "clouduser",
+            "metadata": {
+                "description": "Admin username."
+            }
         },
         "adminPassword": {
             "type": "securestring",
+            "metadata": {
+                "description": "Admin password."
+            }
         },
-        "subnetId": {
+        "virtualNetworkResourceID": {
             "type": "string",
+            "metadata": {
+                "description": "The Resource ID of an existing virtual network to deploy your cluster into."
+            }
         },
-        "matlabRelease": {
-            "type": "string"
-        },
-        "ArtifactsBase": {
+        "subnetName": {
             "type": "string",
-        },
-        "providerID": {
-            "type": "string"
+            "metadata": {
+                "description": "The name of an existing subnet within your virtual network to deploy your cluster into."
+            }
         }
     },
     "variables": {
-        "headnodeMachineName": "headnode",
-        "vmssName": "workers",
+        "namingPrefix": "[toLower(take(parameters('clusterName'), 15))]",
+        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/mdcs-on-azure/master/",
+        "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
+        "subnetId": "[concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName'))]",
+        "headnodeMachineName": "[concat(take(variables('namingPrefix'), 6), '-headnode')]",
+        "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
         "publisher": "mathworks-inc",
         "offer": "mdcs-ref-arch-18a-win",
-        "sku18a": {
-            "sku": "mdcs-ref-arch-18a-win-sku",
-            "version": "1.1.0"
-        },
-        "sku18b": {
-            "sku": "mdcs-ref-arch-18b-win-sku",
-            "version": "1.1.0"
-        },
-        "skuPair": "[if(equals(parameters('matlabRelease'), 'R2018a'), variables('sku18a'), variables('sku18b'))]",
-        "sku":"[variables('skuPair').sku]",
-        "version":"[variables('skuPair').version]",
+        "sku": "null",
+        "version": "null",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
@@ -84,7 +139,7 @@
             "osDisk": "[variables('osDisk')]",
             "dataDisks": [
                 {
-                    "name": "database",
+                    "name": "[concat(variables('headnodeMachineName'), '-database')]",
                     "diskSizeGB": "[parameters('databaseVolumeSize')]",
                     "lun": 0,
                     "createOption": "Empty",
@@ -98,13 +153,13 @@
         "publicIpTimeout": "20",
         "networkInterfacePostfix": "nic",
         "publicIpConfigPostfix": "ipConfig",
-        "networkSecurityGroupName": "nsg",
+        "networkSecurityGroupName": "[concat(variables('namingPrefix'), '-nsg')]",
         "totalPorts": "[add(7, mul(4, parameters('numWorkersPerNode')))]",
         "startPort": 27350,
         "finalPort": "[add(variables('startPort'), variables('totalPorts'))]",
-        "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'storage')]",
+        "storageAccountName": "[concat(take(concat(variables('namingPrefix'), uniquestring(resourceGroup().id)), 17), 'storage')]",
         "storageAccountType": "Standard_LRS",
-        "scriptsUrl": "[concat(parameters('ArtifactsBase'), 'scripts/')]",
+        "scriptsUrl": "[concat(variables('ArtifactsBase'), 'scripts/')]",
         "startScript": "startmjs.ps1",
         "fileUris": [
             "[concat(variables('scriptsUrl'), variables('startScript'))]",
@@ -112,14 +167,29 @@
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
         "scriptExe": "[concat('./', variables('startScript'))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'))]",
+        "licenseString": "[concat(parameters('licenseManagerPort'), '@', string(parameters('licenseManagerHostName')))]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20180815', ' -LicenseServer ', variables('licenseString'))]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "tagsForAll": {
-            "provider": "[parameters('providerID')]"
+            "provider": "[variables('providerID')]"
         }
     },
     "resources": [
+        {
+            "name": "[variables('headnodeIPName')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2017-06-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "publicIPAllocationMethod": "Static",
+                "dnsSettings": {
+                    "domainNameLabel": "[concat(variables('headnodeMachineName'), variables('dnsLabelPrefix'))]"
+                },
+                "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
+            }
+        },
         {
             "name": "[variables('storageAccountName')]",
             "type": "Microsoft.Storage/storageAccounts",
@@ -183,20 +253,6 @@
             }
         },
         {
-            "name": "[variables('headnodeIPName')]",
-            "type": "Microsoft.Network/publicIPAddresses",
-            "apiVersion": "2017-06-01",
-            "location": "[resourceGroup().location]",
-            "tags": "[variables('tagsForAll')]",
-            "properties": {
-                "publicIPAllocationMethod": "Static",
-                "dnsSettings": {
-                    "domainNameLabel": "[concat(variables('headnodeMachineName'), variables('dnsLabelPrefix'))]"
-                },
-                "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
-            }
-        },
-        {
             "name": "[concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2017-03-01",
@@ -212,7 +268,7 @@
                         "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
                         "properties": {
                             "subnet": {
-                                "id": "[parameters('subnetId')]"
+                                "id": "[variables('subnetId')]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
                             "publicIpAddress": {
@@ -324,7 +380,7 @@
                                             "name": "[concat(variables('vmssName'), variables('publicIpConfigPostfix'))]",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[parameters('subnetId')]"
+                                                    "id": "[variables('subnetId')]"
                                                 },
                                                 "publicIpAddressConfiguration": {
                                                     "name": "[variables('publicIpPostfix')]",
@@ -369,9 +425,12 @@
             }
         },
         {
-            "name": "[concat('pid-', toLower(parameters('providerID')))]",
+            "name": "[concat('pid-', toLower(variables('providerID')))]",
             "apiVersion": "2017-05-10",
             "type": "Microsoft.Resources/deployments",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]"
+            ],
             "properties": {
                 "mode": "Incremental",
                 "template": {

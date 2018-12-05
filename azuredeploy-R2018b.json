@@ -86,8 +86,8 @@
         "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
         "publisher": "mathworks-inc",
         "offer": "mdcs-ref-arch-18a-win",
-        "sku": "null",
-        "version": "null",
+        "sku": "mdcs-ref-arch-18b-win-sku",
+        "version": "1.1.0",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
@@ -142,7 +142,7 @@
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
         "scriptExe": "[concat('./', variables('startScript'))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20180815', ' -LicenseServer mhlm')]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20190926', ' -LicenseServer mhlm')]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "tagsForAll": {

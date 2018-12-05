@@ -13,6 +13,8 @@ Usage:                    startmjs [-Role vm_role]
                                    [-HeadnodeInternalHostname headnode_internal_hostname]
                                    [-HeadnodeExternalHostname headnode_external_hostname]
                                    [-HeadnodeInternalIPAddress headnode_internal_ip_address]
+                                   [-ReleaseDate release_date]
+                                   [-LicenseServer license_server]
 
 -Role                      Role of VM in MJS cluster. Allowed values are "headnode" or "worker".
                            Only a single headnode VM is allowed.
@@ -34,11 +36,19 @@ Usage:                    startmjs [-Role vm_role]
 
 -HeadnodeInternalIPAddress The private internal ip address of the headnode VM.
 
+-ReleaseDate               Release identifier.
+
+-LicenseServer             License server identifier of the form port@hostname. For example, to use a
+                           Network License Manager running at hostname "licenseHost" on port 27000, use
+                           "27000@licenseHost".
+                           If LicenseServer is empty, or the value is not of the expected form port@hostname,
+                           Online Licensing will be used instead.
+
 .EXAMPLE
 startmjs -Role worker -NumWorkers 2 -ClusterName myCluster
     -StorageAccountName store -StorageAccountKey exampleabcdef123456==
     -HeadnodeInternalHostname headnode -HeadnodeExternalHostname headnode.example.com
-    -HeadnodeInternalIPAddress 10.0.0.4
+    -HeadnodeInternalIPAddress 10.0.0.4 -ReleaseDate development
 #>
 
 Param (
@@ -49,7 +59,9 @@ Param (
     [Parameter(Mandatory=$True)][string]$StorageAccountKey,
     [Parameter(Mandatory=$True)][string]$HeadnodeInternalHostname,
     [Parameter(Mandatory=$True)][string]$HeadnodeExternalHostname,
-    [Parameter(Mandatory=$True)][string]$HeadnodeInternalIPAddress
+    [Parameter(Mandatory=$True)][string]$HeadnodeInternalIPAddress,
+    [Parameter(Mandatory=$False)][string]$ReleaseDate="development",
+    [Parameter(Mandatory=$False)][string]$LicenseServer="mhlm"
 )
 
 Function StartTranscript() {
@@ -226,8 +238,7 @@ Echo "Current user is: $User"
 # Log node type information
 Echo "VM role is: $Role"
 
-$ReleaseDate = "20190926"
-$MHLMContext = "MDCS_Azure_${ReleaseDate}"
+$MHLMContext = "MDCS_Azure"
 Echo "setenv MHLM_CONTEXT=$MHLMContext"
 [Environment]::SetEnvironmentVariable("MHLM_CONTEXT", $MHLMContext, "Machine")
 
@@ -328,6 +339,21 @@ Echo "Using matlab root $Matlabroot"
 $Mdcsdir = $Matlabroot + "\toolbox\distcomp\bin"
 Set-Location $Mdcsdir
 
+# Check if LicenseServer string is of the form port@host. For example "27000@netlm-server".
+If ($LicenseServer -and $LicenseServer -match '(?<Port>\d+)\@(?<Host>.+)') {
+    $FlexPort = $Matches.Port
+    $FlexMachineName = $Matches.Host
+    Echo "Configuring worker MATLABs to checkout license using Network License Manager: $FlexPort@$FlexMachineName"
+    $LicensesDir = Join-Path $Matlabroot "licenses"
+    $LicenseFile = Join-Path $LicensesDir "network.lic"
+    $LicenseText = "SERVER $FlexMachineName 123456789ABC $FlexPort`r`nUSE_SERVER"
+    Set-Content -Path $LicenseFile -Value $LicenseText -NoNewline
+    $LicenseSource = "flex"
+} Else {
+    Echo "Configuring worker MATLABs to checkout license using Online Licensing"
+    $LicenseSource = "mhlm"
+}
+
 $SharedFolder = "K:\cluster"
 If(-Not (Test-Path $SharedFolder)) {
     New-Item $SharedFolder -Type Directory -Force
@@ -401,7 +427,6 @@ $LogLevel = "2"
 $MdceCommand = "-cleanPreserveJobs"
 $MdceCommand = "-loglevel " + $LogLevel
 $MdceCommand = $MdceCommand + " -disableelevate"
-$MdceCommand = $MdceCommand + " -usemhlm"
 $MdceCommand = $MdceCommand + " -workerproxiespoolconnections"
 $MdceCommand = $MdceCommand + " -enablepeerlookup"
 $MdceCommand = $MdceCommand + " -hostname " + $HostnameToUse
@@ -409,6 +434,9 @@ $MdceCommand = $MdceCommand + " -untrustedclients"
 $MdceCommand = $MdceCommand + " -usesecurecommunication"
 $MdceCommand = $MdceCommand + " -sharedsecretfile " + $LocalSharedSecretFile
 $MdceCommand = $MdceCommand + " -checkpointbase " + $CheckpointDir
+If ($LicenseSource -eq "mhlm") {
+    $MdceCommand = $MdceCommand + " -usemhlm"
+}
 
 Echo "Start mdce service"
 $MdceStartCommand = ".\mdce.bat start $MdceCommand"
