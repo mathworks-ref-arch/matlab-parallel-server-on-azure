@@ -88,7 +88,7 @@
     },
     "variables": {
         "namingPrefix": "[toLower(take(parameters('clusterName'), 15))]",
-        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/mdcs-on-azure/master/",
+        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/matlab-parallel-server-on-azure/master/",
         "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
         "subnetId": "[concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName'))]",
         "headnodeMachineName": "[concat(take(variables('namingPrefix'), 6), '-headnode')]",
