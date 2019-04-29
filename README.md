@@ -43,7 +43,7 @@ The following resources are created.
     * Subnet (Microsoft.Network/virtualNetworks/subnets)
     * Network Security Group (Microsoft.Network/networkSecurityGroups) : Ingress rules from client IP address:
         * Allow 3389: Required for Remote Desktop Protocol to the cluster nodes.
-        * Allow 27350 – 27257 + (4 * number of workers): Open 7 ports, plus 4 additional ports for each worker service on the Virtual Machine (VM). Required for communication from clients to the job scheduler and worker processes.
+        * Allow 27350 – 27357 + (4 * number of workers): Open 8 ports, plus 4 additional ports for each worker service on the Virtual Machine (VM). Required for communication from clients to the job scheduler and worker processes.
         * Allow all internal traffic: Open access to network traffic between all cluster nodes internally.
 * Each instance deployed to the Virtual Network will create the following:
     * Network interface (Microsoft.Network/networkInterfaces)
