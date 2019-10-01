@@ -51,7 +51,7 @@ When you click the **Purchase** button, the resources are created using Azure te
 1. After clicking **Purchase** you will be taken to the Azure Portal Dashboard. To montior the progress of your deployment, select your resource group from the Resource Groups panel. Wait for the all **Deployments** to reach **Succeeded**.
 2. Select the Storage Account ending with **storage**. The screen should look like the one in Figure 1.
 
-    ![Resource Group On Completion](img/Deployment_Complete_Select_Storage.png)
+    ![Resource Group On Completion](../../img/Deployment_Complete_Select_Storage.png)
 
     *Figure 1: Resource Group On Completion*
 
@@ -79,7 +79,7 @@ You can remove the Resource Group and all associated resources when you are done
 3. Select the "Delete resource group" icon to destroy all resources deplyoyed in this group.
 4. You will be prompted to enter the name of the resource group to confirm the deletion.
 
-    ![Resource Group Delete](img/Resource_Group_Delete.png)
+    ![Resource Group Delete](../../img/Resource_Group_Delete.png)
 
 ## Troubleshooting
 If your resource group fails to deploy, check the Deployments section of the Resource Group. It will indicate which resource deployments failed and allow you to navigate to the causing error message.

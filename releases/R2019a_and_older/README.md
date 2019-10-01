@@ -32,7 +32,7 @@ Microsoft Azure is a set of cloud services which allow you to build, deploy, and
 
 The MATLAB Job Scheduler and the resources required by it are created using [Azure Resource Manager templates](https://docs.microsoft.com/en-gb/azure/azure-resource-manager/resource-group-overview). The architecture of the cluster resources created by the template is illustrated in Figure 2. For more information about each resource, see the [Azure template reference.](https://docs.microsoft.com/en-us/azure/templates/)
 
-![Cluster Architecture](img/Azure_Solution_Scale_Set.png?raw=true)
+![Cluster Architecture](../../img/Azure_Solution_Scale_Set.png?raw=true)
 
 *Figure 2: Cluster Architecture*
 
