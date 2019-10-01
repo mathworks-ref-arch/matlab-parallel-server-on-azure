@@ -16,11 +16,12 @@ You are responsible for the cost of the Azure services used when you create clou
 # Introduction
 The following guide will help you automate the process of launching MATLAB Parallel Server and MATLAB Job Scheduler on Azure using your Azure account. The cloud resources are created using Azure Resource Manager (ARM) templates. For information about the architecture of this solution, see [Learn About Cluster Architecture](#learn-about-cluster-architecture).
 
-# Choose a Deployment Option
-The MATLAB Parallel Server cloud reference architecture for Azure supports two license configurations: online licensing and a network license manager. For more information on how to configure your license for cloud use, see [MATLAB Parallel Server on the Cloud](https://www.mathworks.com/help/licensingoncloud/matlab-parallel-server-on-the-cloud.html).
+# Deployment Steps
+The MATLAB Parallel Reference Architecture is released in lockstep with the bi-annual MATLAB releases. Each reference architecture release has its own instructions as we continue to evolve it. Select a release to continue:
 
-* [Deploy MATLAB Parallel Server on Azure using Online Licensing](doc/online-licensing-instructions.md)
-* [Deploy MATLAB Parallel Server on Azure using a Network License Manager](doc/license-manager-instructions.md)
+| Release |
+| ------- |
+| [R2019a](releases/R2019a_and_older/README.md) |
 
 # Learn About Cluster Architecture
 
@@ -32,7 +33,7 @@ Microsoft Azure is a set of cloud services which allow you to build, deploy, and
 
 The MATLAB Job Scheduler and the resources required by it are created using [Azure Resource Manager templates](https://docs.microsoft.com/en-gb/azure/azure-resource-manager/resource-group-overview). The architecture of the cluster resources created by the template is illustrated in Figure 2. For more information about each resource, see the [Azure template reference.](https://docs.microsoft.com/en-us/azure/templates/)
 
-![Cluster Architecture](doc/Azure_Solution_Scale_Set.png?raw=true)
+![Cluster Architecture](img/Azure_Solution_Scale_Set.png?raw=true)
 
 *Figure 2: Cluster Architecture*
 

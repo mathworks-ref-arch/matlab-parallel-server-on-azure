@@ -44,41 +44,16 @@
                 "description": "Azure instance type, see https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes."
             }
         },
-        "databaseVolumeSize": {
-            "type": "int",
-            "defaultValue": 100,
-            "minValue": 0,
-            "maxValue": 4095,
-            "metadata": {
-                "description": "The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database."
-            }
-        },
         "clientIPAddress": {
             "type": "string",
+            "defaultValue": "213.146.129.60/32",
             "minLength": 1,
             "metadata": {
                 "description": "The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value <your_public_ip_address>/32 to restrict access to only your computer."
             }
         },
-        "licenseManagerHostName": {
-            "type": "string",
-            "defaultValue": "netlm-server",
-            "metadata": {
-                "description": "The hostname or ip address of the virtual machine hosting your network license manager for MATLAB. If deployed in a different virtual network, ensure that the hostname or address can be correctly resolved."
-            }
-        },
-        "licenseManagerPort": {
-            "type": "int",
-            "defaultValue": 27000,
-            "minValue": 0,
-            "maxValue": 65535 ,
-            "metadata": {
-                "description": "The port to use when connecting to your network license manager for MATLAB."
-            }
-        },
         "adminUsername": {
             "type": "string",
-            "defaultValue": "clouduser",
             "metadata": {
                 "description": "Admin username."
             }
@@ -89,64 +64,41 @@
                 "description": "Admin password."
             }
         },
-        "virtualNetworkResourceID": {
+        "vmdisk1Uri": {
+          "type": "string",
+          "metadata": {
+              "description": "URI of the image to use"
+          }
+        },
+        "userImageStorageAccountResourceGroupName": {
             "type": "string",
             "metadata": {
-                "description": "The Resource ID of an existing virtual network to deploy your cluster into."
+                "description": "The storage account resource group into which to put the VHD. Must be the same as the storage account resource group that contains vmdisk1Uri."
             }
         },
-        "subnetName": {
+        "userImageStorageAccountName": {
             "type": "string",
             "metadata": {
-                "description": "The name of an existing subnet within your virtual network to deploy your cluster into."
+                "description": "The storage account into which to put the VHD. Must be the same as the storage account that contains vmdisk1Uri."
             }
-        }
+        },
+        "diskGuidValue": {
+             "type": "string",
+             "defaultValue": "[newGuid()]"
+         }
     },
     "variables": {
         "namingPrefix": "[toLower(take(parameters('clusterName'), 15))]",
         "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/matlab-parallel-server-on-azure/master/",
+        "addressPrefix": "10.0.0.0/16",
+        "subnetPrefix": "10.0.0.0/24",
+        "virtualNetworkName": "[concat(variables('namingPrefix'), '-vnet')]",
+        "subnetName": "[concat(variables('namingPrefix'), '-subnet')]",
         "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
-        "subnetId": "[concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName'))]",
         "headnodeMachineName": "[concat(take(variables('namingPrefix'), 6), '-headnode')]",
         "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
-        "publisher": "mathworks-inc",
-        "offer": "mdcs-ref-arch-18a-win",
-        "sku": "mdcs-ref-arch-18a-win-sku",
-        "version": "1.1.0",
-        "imageReference": {
-            "publisher": "[variables('publisher')]",
-            "offer": "[variables('offer')]",
-            "sku": "[variables('sku')]",
-            "version": "[variables('version')]"
-        },
-        "plan": {
-            "name": "[variables('sku')]",
-            "publisher": "[variables('publisher')]",
-            "product": "[variables('offer')]"
-        },
-        "osDisk": {
-            "createOption": "fromImage",
-            "managedDisk": {
-                "storageAccountType": "Premium_LRS"
-            }
-        },
-        "storageProfileWithoutDisk": {
-            "imageReference": "[variables('imageReference')]",
-            "osDisk": "[variables('osDisk')]"
-        },
-        "storageProfileWithDisk": {
-            "imageReference": "[variables('imageReference')]",
-            "osDisk": "[variables('osDisk')]",
-            "dataDisks": [
-                {
-                    "name": "[concat(variables('headnodeMachineName'), '-database')]",
-                    "diskSizeGB": "[parameters('databaseVolumeSize')]",
-                    "lun": 0,
-                    "createOption": "Empty",
-                    "caching": "None"
-                }
-            ]
-        },
+        "vmName": "servermachine",
+        "storageAccountApiVersion": "2018-07-01",
         "publicIPPostfix": "pub",
         "headnodeIPName": "[concat(variables('headnodeMachineName'), variables('publicIPPostfix'))]",
         "dnsLabelPrefix": "[concat('azure-', uniqueString(resourceGroup().id))]",
@@ -167,8 +119,7 @@
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
         "scriptExe": "[concat('./', variables('startScript'))]",
-        "licenseString": "[concat(parameters('licenseManagerPort'), '@', string(parameters('licenseManagerHostName')))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20180815', ' -LicenseServer ', variables('licenseString'))]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20190418', ' -LicenseServer mhlm')]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "tagsForAll": {
@@ -176,6 +127,28 @@
         }
     },
     "resources": [
+        {
+            "name": "[variables('virtualNetworkName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2017-03-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
         {
             "name": "[variables('headnodeIPName')]",
             "type": "Microsoft.Network/publicIPAddresses",
@@ -207,6 +180,9 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2017-03-01",
             "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
             "tags": "[variables('tagsForAll')]",
             "properties": {
                 "securityRules": [
@@ -268,7 +244,7 @@
                         "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
                         "properties": {
                             "subnet": {
-                                "id": "[variables('subnetId')]"
+                                "id": "[reference(concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName')), '2017-03-01').subnets[0].id]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
                             "publicIpAddress": {
@@ -291,7 +267,6 @@
                 "[concat('Microsoft.Network/networkInterfaces/', variables('headnodeMachineName'), variables('networkInterfacePostfix'))]"
             ],
             "tags": "[variables('tagsForAll')]",
-            "plan": "[variables('plan')]",
             "properties": {
                 "osProfile": {
                     "computerName": "[variables('headnodeMachineName')]",
@@ -304,7 +279,20 @@
                 "hardwareProfile": {
                     "vmSize": "[parameters('headnodeInstanceType')]"
                 },
-                "storageProfile": "[if(greater(parameters('databaseVolumeSize'), 0), variables('storageProfileWithDisk'), variables('storageProfileWithoutDisk'))]",
+                "storageProfile": {
+                    "osDisk": {
+                        "name": "[concat(variables('vmName'),'-osDisk')]",
+                        "osType": "Windows",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "image": {
+                            "uri": "[parameters('vmdisk1Uri')]"
+                        },
+                        "vhd": {
+                            "uri": "[concat(reference(resourceId(parameters('userImageStorageAccountResourceGroupName'), 'Microsoft.Storage/storageAccounts/', parameters('userImageStorageAccountName')), variables('storageAccountApiVersion')).primaryEndpoints.blob, 'vhds/',variables('vmName'), uniquestring(resourceGroup().id), '/', parameters('diskGuidValue'), '-osDisk.vhd')]"
+                        }
+                    }
+                },
                 "networkProfile": {
                     "networkInterfaces": [
                         {
@@ -353,7 +341,6 @@
                 "tier": "Standard",
                 "capacity": "[parameters('numWorkerNodes')]"
             },
-            "plan": "[variables('plan')]",
             "properties": {
                 "overprovision": false,
                 "upgradepolicy": {
@@ -368,7 +355,17 @@
                             "provisionVmAgent": true
                         }
                     },
-                    "storageProfile": "[variables('storageProfileWithoutDisk')]",
+                    "storageProfile": {
+                        "osDisk": {
+                            "name": "[concat(variables('vmName'),'-osDisk')]",
+                            "osType": "Windows",
+                            "caching": "ReadOnly",
+                            "createOption": "FromImage",
+                            "image": {
+                                "uri": "[parameters('vmdisk1Uri')]"
+                            }
+                        }
+                    },
                     "networkProfile": {
                         "networkInterfaceConfigurations": [
                             {
@@ -380,7 +377,7 @@
                                             "name": "[concat(variables('vmssName'), variables('publicIpConfigPostfix'))]",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[variables('subnetId')]"
+                                                    "id": "[reference(concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName')), '2017-03-01').subnets[0].id]"
                                                 },
                                                 "publicIpAddressConfiguration": {
                                                     "name": "[variables('publicIpPostfix')]",
@@ -440,5 +437,11 @@
                 }
             }
         }
-    ]
+    ],
+    "outputs": {
+        "virtualNetworkResourceID": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+            "type": "string"
+        }
+    }
 }

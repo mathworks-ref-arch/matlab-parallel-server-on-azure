@@ -10,7 +10,7 @@ Before starting, you will need the following:
 
 Click the **Deploy to Azure** button below to deploy the cloud resources on Azure. This will open the Azure Portal in your web browser.
 
-<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Fazuredeploy-with-license-manager-R2019a.json" target="_blank">
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2019a_and_older%2Fazuredeploy-with-license-manager-R2019a.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
 </a>
 
@@ -57,7 +57,7 @@ When you click the **Purchase** button, the resources are created using Azure te
 1. After clicking **Purchase** you will be taken to the Azure Portal Dashboard. To montior the progress of your deployment, select your resource group from the Resource Groups panel. Wait for the all **Deployments** to reach **Succeeded**.
 2. Select the Storage Account ending with **storage**. The screen should look like the one in Figure 1.
 
-    ![Resource Group On Completion](Deployment_Complete_Select_Storage.png)
+    ![Resource Group On Completion](img/Deployment_Complete_Select_Storage.png)
 
     *Figure 1: Resource Group On Completion*
 
@@ -85,7 +85,7 @@ You can remove the Resource Group and all associated resources when you are done
 3. Select the "Delete resource group" icon to destroy all resources deplyoyed in this group.
 4. You will be prompted to enter the name of the resource group to confirm the deletion.
 
-    ![Resource Group Delete](Resource_Group_Delete.png)
+    ![Resource Group Delete](img/Resource_Group_Delete.png)
 
 ## Troubleshooting
 If your resource group fails to deploy, check the Deployments section of the Resource Group. It will indicate which resource deployments failed and allow you to navigate to the causing error message.
@@ -97,5 +97,5 @@ You can launch the reference architecture within previous releases of MATLAB usi
 
 | Release | Windows Server 2016 VM  |
 |---------------|-----------------|
-| MATLAB R2018b | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Fazuredeploy-with-license-manager-R2018b.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a> |
-| MATLAB R2018a | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Fazuredeploy-with-license-manager-R2018a.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a> |
+| MATLAB R2018b | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2019a_and_older%2Fazuredeploy-with-license-manager-R2018b.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a> |
+| MATLAB R2018a | <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2019a_and_older%2Fazuredeploy-with-license-manager-R2018a.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a> |

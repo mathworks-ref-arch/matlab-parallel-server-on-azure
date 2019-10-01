@@ -72,30 +72,21 @@
             "metadata": {
                 "description": "Admin password."
             }
-        },
-        "virtualNetworkResourceID": {
-            "type": "string",
-            "metadata": {
-                "description": "The Resource ID of an existing virtual network to deploy your cluster into."
-            }
-        },
-        "subnetName": {
-            "type": "string",
-            "metadata": {
-                "description": "The name of an existing subnet within your virtual network to deploy your cluster into."
-            }
         }
     },
     "variables": {
         "namingPrefix": "[toLower(take(parameters('clusterName'), 15))]",
-        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/matlab-parallel-server-on-azure/master/",
+        "ArtifactsBase": "https://raw.githubusercontent.com/mathworks-ref-arch/matlab-parallel-server-on-azure/master/releases/R2019a_and_older/",
+        "addressPrefix": "10.0.0.0/16",
+        "subnetPrefix": "10.0.0.0/24",
+        "virtualNetworkName": "[concat(variables('namingPrefix'), '-vnet')]",
+        "subnetName": "[concat(variables('namingPrefix'), '-subnet')]",
         "providerID": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
-        "subnetId": "[concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName'))]",
         "headnodeMachineName": "[concat(take(variables('namingPrefix'), 6), '-headnode')]",
         "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
         "publisher": "mathworks-inc",
         "offer": "mdcs-ref-arch-18a-win",
-        "sku": "mdcs-ref-arch-18b-win-sku",
+        "sku": "mdcs-ref-arch-18a-win-sku",
         "version": "1.1.0",
         "imageReference": {
             "publisher": "[variables('publisher')]",
@@ -123,7 +114,7 @@
             "osDisk": "[variables('osDisk')]",
             "dataDisks": [
                 {
-                    "name": "[concat(variables('headnodeMachineName'), '-database')]",
+                    "name": "[concat(variables('namingPrefix'), '-database')]",
                     "diskSizeGB": "[parameters('databaseVolumeSize')]",
                     "lun": 0,
                     "createOption": "Empty",
@@ -151,7 +142,7 @@
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
         "scriptExe": "[concat('./', variables('startScript'))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20190926', ' -LicenseServer mhlm')]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20180815', ' -LicenseServer mhlm')]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "tagsForAll": {
@@ -159,6 +150,28 @@
         }
     },
     "resources": [
+        {
+            "name": "[variables('virtualNetworkName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2017-03-01",
+            "location": "[resourceGroup().location]",
+            "tags": "[variables('tagsForAll')]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('addressPrefix')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetPrefix')]"
+                        }
+                    }
+                ]
+            }
+        },
         {
             "name": "[variables('headnodeIPName')]",
             "type": "Microsoft.Network/publicIPAddresses",
@@ -190,6 +203,9 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2017-03-01",
             "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+            ],
             "tags": "[variables('tagsForAll')]",
             "properties": {
                 "securityRules": [
@@ -251,7 +267,7 @@
                         "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
                         "properties": {
                             "subnet": {
-                                "id": "[variables('subnetId')]"
+                                "id": "[reference(concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName')), '2017-03-01').subnets[0].id]"
                             },
                             "privateIPAllocationMethod": "Dynamic",
                             "publicIpAddress": {
@@ -363,7 +379,7 @@
                                             "name": "[concat(variables('vmssName'), variables('publicIpConfigPostfix'))]",
                                             "properties": {
                                                 "subnet": {
-                                                    "id": "[variables('subnetId')]"
+                                                    "id": "[reference(concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName')), '2017-03-01').subnets[0].id]"
                                                 },
                                                 "publicIpAddressConfiguration": {
                                                     "name": "[variables('publicIpPostfix')]",
@@ -423,5 +439,11 @@
                 }
             }
         }
-    ]
+    ],
+    "outputs": {
+        "virtualNetworkResourceID": {
+            "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+            "type": "string"
+        }
+    }
 }
