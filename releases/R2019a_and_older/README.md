@@ -19,8 +19,8 @@ The following guide will help you automate the process of launching MATLAB Paral
 # Choose a Deployment Option
 The MATLAB Parallel Server cloud reference architecture for Azure supports two license configurations: online licensing and a network license manager. For more information on how to configure your license for cloud use, see MATLAB Parallel Server on the Cloud.
 
-* [Deploy MATLAB Parallel Server on Azure using Online Licensing](releases/R2019a_and_older/online-licensing-instructions.md)
-* [Deploy MATLAB Parallel Server on Azure using a Network License Manager](releases/R2019a_and_older/license-manager-instructions.md)
+* [Deploy MATLAB Parallel Server on Azure using Online Licensing](online-licensing-instructions.md)
+* [Deploy MATLAB Parallel Server on Azure using a Network License Manager](license-manager-instructions.md)
 
 # Learn About Cluster Architecture
 
