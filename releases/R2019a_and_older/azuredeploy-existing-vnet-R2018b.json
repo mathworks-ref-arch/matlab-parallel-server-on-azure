@@ -8,7 +8,7 @@
             "minLength": 1,
             "maxLength": 61,
             "metadata": {
-                "description": "Name to give to this MJS."
+                "description": "A name to use for this cluster. This name will be shown in MATLAB as the cluster profile name."
             }
         },
         "numWorkerNodes": {
@@ -17,7 +17,7 @@
             "minValue": 0,
             "maxValue": 1000,
             "metadata": {
-                "description": "Number of worker nodes to start up."
+                "description": "The number of Azure instances to start for the workers to run on."
             }
         },
         "numWorkersPerNode": {
@@ -25,7 +25,7 @@
             "defaultValue": 2,
             "minValue": 1,
             "metadata": {
-                "description": "Number of workers per node to start up."
+                "description": "The number of MATLAB workers to start on each instance. Specify 1 worker for every 2 vCPUs, because this results in 1 worker per physical core. For example a Standard_D64s_v3 instance has 64 vCPUs, so can support 32 MATLAB workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes for details on vCPUs for each instance type."
             }
         },
         "headnodeInstanceType": {
@@ -33,7 +33,7 @@
             "defaultValue": "Standard_D2s_v3",
             "minLength": 1,
             "metadata": {
-                "description": "Azure instance type, see https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes."
+                "description": "The Azure instance type to use for the head node, which will run the job manager. No workers will be started on this node, so this can be a smaller instance type than the worker nodes. See  https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes. for a list of instance types."
             }
         },
         "workerInstanceType": {
@@ -41,14 +41,14 @@
             "defaultValue": "Standard_D2s_v3",
             "minLength": 1,
             "metadata": {
-                "description": "Azure instance type, see https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes."
+                "description": "The Azure instance type to use for the workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes for a list of instance types."
             }
         },
         "databaseVolumeSize": {
             "type": "int",
             "defaultValue": 100,
             "minValue": 0,
-            "maxValue": 4095,
+            "maxValue": 1023,
             "metadata": {
                 "description": "The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database."
             }
@@ -57,7 +57,7 @@
             "type": "string",
             "minLength": 1,
             "metadata": {
-                "description": "The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value <your_public_ip_address>/32 to restrict access to only your computer."
+                "description": "The IP address range that will be allowed to connect to this cluster from outside of the virtual network. This field should be formatted as <ip_address>/<mask>. E.g. 10.0.0.1/32. This is the public IP address which can be found by searching for 'what is my ip address' on the web. The mask determines the number of IP addresses to include. A mask of 32 is a single IP address. This calculator can be used to build a specific range: https://www.ipaddressguide.com/cidr. You may need to contact your IT administrator to determine which address is appropriate."
             }
         },
         "adminUsername": {
@@ -151,7 +151,7 @@
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
         "scriptExe": "[concat('./', variables('startScript'))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20190926', ' -LicenseServer mhlm')]",
+        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -ReleaseDate ', '20190919', ' -LicenseServer mhlm')]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "tagsForAll": {
