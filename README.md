@@ -4,7 +4,9 @@
 
 Before starting, you will need the following:
 
-- MATLAB Parallel Server™ license. For more information on how to configure your license for cloud use, see [MATLAB Parallel Server on the Cloud](https://www.mathworks.com/help/licensingoncloud/matlab-parallel-server-on-the-cloud.html)
+- MATLAB Parallel Server™ license. For more information on how to configure your license for cloud use, see [MATLAB Parallel Server on the Cloud](https://www.mathworks.com/help/licensingoncloud/matlab-parallel-server-on-the-cloud.html). Either:
+    * MATLAB Parallel Server TM license configured to use online licensing for MATLAB.
+    * A network license manager for MATLAB hosting sufficient MATLAB Parallel Server licenses for you cluster. MathWorks provide a reference architecture to deploy a suitable [Network License Manager for MATLAB on Azure](https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure) or an existing license manager can be used.
 
 - MATLAB® and Parallel Computing Toolbox™ on your desktop.
 
@@ -13,22 +15,23 @@ Before starting, you will need the following:
 # Costs
 You are responsible for the cost of the Azure services used when you create cloud resources using this guide. Resource settings, such as instance type, will affect the cost of deployment. For cost estimates, see the pricing pages for each Azure service you will be using. Prices are subject to change.
 
-
-
 # Introduction
 The following guide will help you automate the process of launching a Parallel Server for MATLAB on Azure using your Azure account. The cloud resources are created using Azure Resource Manager (ARM) templates. For information about the architecture of this solution, see [Learn About Parallel Server for MATLAB Architecture](#learn-about-parallel-server-for-matlab-architecture).
+
 # Deployment Steps
 
-The MATLAB Parallel Server Reference Architecture is released in lockstep with the bi-annual MATLAB releases. 
-Each reference architecture release has its own instructions as we continue to evolve it. 
+The MATLAB Parallel Server Reference Architecture is released in lockstep with the bi-annual MATLAB releases.
+Each reference architecture release has its own instructions as we continue to evolve it.
 Select a release to continue:
 
 | Release |
 | ------- |
-| [R2019b](releases/R2019b/README.md)
-| [R2019a\_and\_older](releases/R2019a_and_older/README.md)
+| [R2020a](releases/R2020a/README.md) |
+| [R2019b](releases/R2019b/README.md) |
+| [R2019a\_and\_older](releases/R2019a_and_older/README.md) |
 
- # Learn About Cluster Architecture 
+
+ # Learn About Cluster Architecture
 
 Parallel Computing Toolbox and MATLAB Parallel Server software let you solve computationally and data-intensive programs using MATLAB and Simulink on computer clusters, clouds, and grids. Parallel processing constructs such as parallel-for loops and code blocks, distributed arrays, parallel numerical algorithms, and message-passing functions let you implement task-parallel and data-parallel algorithms at a high level in MATLAB. To learn more see the documentation: [Parallel Computing Toolbox](https://www.mathworks.com/help/parallel-computing/) and [MATLAB Parallel Server](https://www.mathworks.com/help/matlab-parallel-server).
 
@@ -47,10 +50,7 @@ The following resources are created.
 ### Networking resources
 * Virtual Network (Microsoft.Network/virtualNetworks) The Virtual Network includes the following components:
     * Subnet (Microsoft.Network/virtualNetworks/subnets)
-    * Network Security Group (Microsoft.Network/networkSecurityGroups) : Ingress rules from client IP address:
-        * Allow 3389: Required for Remote Desktop Protocol to the cluster nodes.
-        * Allow 27350 – 27357 + (4 * number of workers): Open 8 ports, plus 4 additional ports for each worker service on the Virtual Machine (VM). Required for communication from clients to the job scheduler and worker processes.
-        * Allow all internal traffic: Open access to network traffic between all cluster nodes internally.
+    * Network Security Group (Microsoft.Network/networkSecurityGroups)
 * Each instance deployed to the Virtual Network will create the following:
     * Network interface (Microsoft.Network/networkInterfaces)
     * Public IP Address (Microsoft.Network/publicIPAddresses)
@@ -68,8 +68,5 @@ The following resources are created.
     * Used to distribute the Cluster Profile to clients. The Cluster Profile is required to authenticate that a user has permission to connect to the cluster.
     * Files uploaded to this File Share will be available to all workers using the K: drive.
 
-# Enhancement Request
-Provide suggestions for additional features or capabilities using the following link: [https://www.mathworks.com/cloud/enhancement-request.html](https://www.mathworks.com/cloud/enhancement-request.html)
-
 # Technical Support
-Email: `cloud-support@mathworks.com`
+If you require assistance or have a request for additional features or capabilities, please contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).
