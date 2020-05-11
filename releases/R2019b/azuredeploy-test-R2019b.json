@@ -37,7 +37,7 @@
             }
         },
         "workerInstanceType": {
-            "defaultValue": "Standard_D4s_v3",
+            "defaultValue": "Standard_F4s_v2",
             "minLength": 1,
             "type": "String",
             "metadata": {

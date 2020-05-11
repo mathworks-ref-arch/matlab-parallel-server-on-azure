@@ -37,7 +37,7 @@
             }
         },
         "workerInstanceType": {
-            "defaultValue": "Standard_D4s_v3",
+            "defaultValue": "Standard_F4s_v2",
             "minLength": 1,
             "type": "String",
             "metadata": {
@@ -94,7 +94,7 @@
         "publisher": "mathworks-inc",
         "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
         "sku": "matlab-parallel-server-ref-arch-19b-vm-win-sku",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
