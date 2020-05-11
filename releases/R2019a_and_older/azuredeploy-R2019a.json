@@ -38,7 +38,7 @@
         },
         "workerInstanceType": {
             "type": "string",
-            "defaultValue": "Standard_D2s_v3",
+            "defaultValue": "Standard_F4s_v2",
             "minLength": 1,
             "metadata": {
                 "description": "The Azure instance type to use for the workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes for a list of instance types."
@@ -87,7 +87,7 @@
         "publisher": "mathworks-inc",
         "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
         "sku": "matlab-parallel-server-ref-arch-19a-vm-win-sku",
-        "version": "2.0.1",
+        "version": "2.0.2",
         "imageReference": {
             "publisher": "[variables('publisher')]",
             "offer": "[variables('offer')]",
