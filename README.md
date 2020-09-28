@@ -20,18 +20,19 @@ The following guide will help you automate the process of launching a Parallel S
 
 # Deployment Steps
 
-The MATLAB Parallel Server Reference Architecture is released in lockstep with the bi-annual MATLAB releases.
-Each reference architecture release has its own instructions as we continue to evolve it.
+The MATLAB Parallel Server Reference Architecture is released in lockstep with the bi-annual MATLAB releases. 
+Each reference architecture release has its own instructions as we continue to evolve it. 
 Select a release to continue:
 
 | Release |
 | ------- |
+| [R2020b](releases/R2020b/README.md) |
 | [R2020a](releases/R2020a/README.md) |
 | [R2019b](releases/R2019b/README.md) |
 | [R2019a\_and\_older](releases/R2019a_and_older/README.md) |
 
 
- # Learn About Cluster Architecture
+ # Learn About Cluster Architecture 
 
 Parallel Computing Toolbox and MATLAB Parallel Server software let you solve computationally and data-intensive programs using MATLAB and Simulink on computer clusters, clouds, and grids. Parallel processing constructs such as parallel-for loops and code blocks, distributed arrays, parallel numerical algorithms, and message-passing functions let you implement task-parallel and data-parallel algorithms at a high level in MATLAB. To learn more see the documentation: [Parallel Computing Toolbox](https://www.mathworks.com/help/parallel-computing/) and [MATLAB Parallel Server](https://www.mathworks.com/help/matlab-parallel-server).
 
