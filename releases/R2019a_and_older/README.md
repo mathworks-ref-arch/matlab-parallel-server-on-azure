@@ -61,9 +61,3 @@ The following resources are created.
     * Used to distribute the Shared Secret created by head node to all worker VMs. The Shared Secret is required for worker instances to register and establish a secure connection with the job scheduler.
     * Used to distribute the Cluster Profile to clients. The Cluster Profile is required to authenticate that a user has permission to connect to the cluster.
     * Files uploaded to this File Share will be available to all workers using the K: drive.
-
-# Enhancement Request
-Provide suggestions for additional features or capabilities using the following link: [https://www.mathworks.com/cloud/enhancement-request.html](https://www.mathworks.com/cloud/enhancement-request.html)
-
-# Technical Support
-Email: `cloud-support@mathworks.com`
