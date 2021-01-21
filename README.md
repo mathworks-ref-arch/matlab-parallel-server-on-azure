@@ -71,13 +71,13 @@ The following resources are created.
 
 ## FAQ
 
-### How do I stop all worker virtual images in the deployment?
+### How do I stop all worker virtual machines in the deployment?
 
-To stop all worker virtual images in the deployment, from the settings page of the virtual machine scale set, set the instance count to 0.
+To stop all worker virtual machines in the deployment, from the settings page of the virtual machine scale set, set the instance count to 0.
 
 ### How do I start the worker virtual machines in the deployment after having stopped them?
 
-To start worker virtual images after having stopped them, from the settings pane of the virtual scale set, set the instance count to the desired number of workers.
+To start worker virtual machines after having stopped them, from the settings pane of the virtual scale set, set the instance count to the desired number of workers.
 
 
 # Technical Support
