@@ -69,5 +69,16 @@ The following resources are created.
     * Used to distribute the Cluster Profile to clients. The Cluster Profile is required to authenticate that a user has permission to connect to the cluster.
     * Files uploaded to this File Share will be available to all workers using the K: drive.
 
+## FAQ
+
+### How do I stop all worker virtual machines in the deployment?
+
+To stop all worker virtual machines in the deployment, from the settings page of the virtual machine scale set, set the instance count to 0.
+
+### How do I start the worker virtual machines in the deployment after having stopped them?
+
+To start worker virtual machines after having stopped them, from the settings pane of the virtual scale set, set the instance count to the desired number of workers.
+
+
 # Technical Support
 If you require assistance or have a request for additional features or capabilities, please contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).
