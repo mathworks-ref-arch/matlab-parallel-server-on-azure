@@ -1,4 +1,4 @@
-# MATLAB Parallel Server on Microsoft Azure
+# MATLAB Parallel Server on Microsoft Azure (Windows VM)
 
 # Requirements
 
@@ -16,7 +16,7 @@ Before starting, you will need the following:
 You are responsible for the cost of the Azure services used when you create cloud resources using this guide. Resource settings, such as instance type, will affect the cost of deployment. For cost estimates, see the pricing pages for each Azure service you will be using. Prices are subject to change.
 
 # Introduction
-The following guide will help you automate the process of launching a Parallel Server for MATLAB on Azure using your Azure account. The cloud resources are created using Azure Resource Manager (ARM) templates. For information about the architecture of this solution, see [Learn About Parallel Server for MATLAB Architecture](#learn-about-parallel-server-for-matlab-architecture).
+The following guide will help you automate the process of launching a Parallel Server for MATLAB, running on Windows virtual machines, using your Azure account. The cloud resources are created using Azure Resource Manager (ARM) templates. For information about the architecture of this solution, see [Learn About Cluster Architecture](#learn-about-cluster-architecture).
 
 # Deployment Steps
 
@@ -26,6 +26,7 @@ Select a release to continue:
 
 | Release |
 | ------- |
+| [R2021a](releases/R2021a/README.md) |
 | [R2020b](releases/R2020b/README.md) |
 | [R2020a](releases/R2020a/README.md) |
 | [R2019b](releases/R2019b/README.md) |
@@ -68,17 +69,6 @@ The following resources are created.
     * Used to distribute the Shared Secret created by head node to all worker VMs. The Shared Secret is required for worker instances to register and establish a secure connection with the job scheduler.
     * Used to distribute the Cluster Profile to clients. The Cluster Profile is required to authenticate that a user has permission to connect to the cluster.
     * Files uploaded to this File Share will be available to all workers using the K: drive.
-
-## FAQ
-
-### How do I stop all worker virtual machines in the deployment?
-
-To stop all worker virtual machines in the deployment, from the settings page of the virtual machine scale set, set the instance count to 0.
-
-### How do I start the worker virtual machines in the deployment after having stopped them?
-
-To start worker virtual machines after having stopped them, from the settings pane of the virtual scale set, set the instance count to the desired number of workers.
-
 
 # Technical Support
 If you require assistance or have a request for additional features or capabilities, please contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).
