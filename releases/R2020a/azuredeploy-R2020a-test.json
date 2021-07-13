@@ -150,6 +150,7 @@
         "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -ClusterName ', parameters('ClusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -LicenseServer ', variables('licenseServer'))]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('NumWorkersPerNode'))]",
+        "stopSpoolerServiceCommand": "[concat('powershell -command ','Stop-Service -Name Spooler -Force; Set-Service -Name Spooler -StartupType Disabled')]",
         "tagsForAll": {
             "provider": "[variables('providerID')]"
         },
@@ -355,7 +356,7 @@
                     "fileUris": "[variables('fileUris')]"
                 },
                 "protectedSettings": {
-                    "commandToExecute": "[concat(variables('installHeadnodeCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))).ipConfigurations[0].properties.privateIPAddress)]"
+                    "commandToExecute": "[concat(variables('stopSpoolerServiceCommand'),'; ', variables('installHeadnodeCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))).ipConfigurations[0].properties.privateIPAddress)]"
                 }
             }
         },
@@ -436,7 +437,7 @@
                                         "fileUris": "[variables('fileUris')]"
                                     },
                                     "protectedSettings": {
-                                        "commandToExecute": "[concat(variables('installWorkerCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))).ipConfigurations[0].properties.privateIPAddress)]"
+                                        "commandToExecute": "[concat(variables('stopSpoolerServiceCommand'),'; ', variables('installWorkerCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))).ipConfigurations[0].properties.privateIPAddress)]"
                                     }
                                 }
                             }
