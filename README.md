@@ -4,7 +4,7 @@
 
 Before starting, you will need the following:
 
-- MATLAB Parallel Server™ license. For more information on how to configure your license for cloud use, see [MATLAB Parallel Server on the Cloud](https://www.mathworks.com/help/licensingoncloud/matlab-parallel-server-on-the-cloud.html). Either:
+- MATLAB Parallel Server™ license. For more information on how to configure your license for cloud use, see [Configure MATLAB Parallel Server Licensing for Cloud Platforms](https://mathworks.com/help/matlab-parallel-server/configure-matlab-parallel-server-licensing-for-cloud-platforms.html). Either:
     * MATLAB Parallel Server TM license configured to use online licensing for MATLAB.
     * A network license manager for MATLAB hosting sufficient MATLAB Parallel Server licenses for you cluster. MathWorks provide a reference architecture to deploy a suitable [Network License Manager for MATLAB on Azure](https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure) or an existing license manager can be used.
 
@@ -26,6 +26,7 @@ Select a release to continue:
 
 | Release |
 | ------- |
+| [R2021b](releases/R2021b/README.md) |
 | [R2021a](releases/R2021a/README.md) |
 | [R2020b](releases/R2020b/README.md) |
 | [R2020a](releases/R2020a/README.md) |
