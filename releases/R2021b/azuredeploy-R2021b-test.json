@@ -104,7 +104,7 @@
         "subnetName": "[if(equals(variables('newOrExistingVirtualNetwork'),'Existing'),parameters('subnetName'),variables('subnetCreateName'))]",
         "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
         "subnet": "[if(equals(variables('newOrExistingVirtualNetwork'),'New'),variables('subnetRef'),concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName')))]",
-        "cuaTrackingNum": "8AE0EA28-E1D4-4627-9459-99DD4120C96E",
+        "cuaTrackingNum": "pid-bcfd52e4-d2d7-4ca3-ba20-9a37f7f85c5f-partnercenter",
         "headnodeMachineName": "[concat(take(variables('namingPrefix'), 6), '-headnode')]",
         "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
         "osDisk": {
@@ -440,7 +440,7 @@
         {
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-06-01",
-            "name": "[concat('pid-', toLower(variables('cuaTrackingNum')))]",
+            "name": "pid-bcfd52e4-d2d7-4ca3-ba20-9a37f7f85c5f-partnercenter",
             "dependsOn": [
                 "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]"
             ],

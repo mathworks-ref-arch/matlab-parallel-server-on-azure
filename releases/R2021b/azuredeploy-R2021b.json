@@ -92,7 +92,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2021b-vm-win-sku",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "imageReference": {
       "publisher": "[variables('publisher')]",
       "offer": "[variables('offer')]",

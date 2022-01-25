@@ -6,7 +6,7 @@ Click the **Deploy to Azure** button below to deploy the cloud resources on Azur
 
 | Create Virtual Network | Use Existing Virtual Network |
 | --- | --- |
-| Use this option to deploy the resources in a new virtual network<br><br><a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2021b%2Fazuredeploy-R2021b.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a></br></br> | Use this option to deploy the resources in an existing virtual network <br><br><a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2021b%2Fazuredeploy-existing-vnet-R2021b.json" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"/></a></br></br> |
+| Use this option to deploy the resources in a new virtual network<br><br><a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2021b%2Fazuredeploy-R2021b.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton"/></a></br></br> | Use this option to deploy the resources in an existing virtual network <br><br><a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2021b%2Fazuredeploy-existing-vnet-R2021b.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton"/></a></br></br> |
 
 > Cluster Platform: Windows Server 2019
 
@@ -72,8 +72,10 @@ Your cluster is now ready to use. It will remain running after you close MATLAB.
 To access a MATLAB Parallel Server cluster from your client MATLAB, your client machine must be able to communicate on specific ports. Make sure that the network firewall allows the following outgoing connections:
 
 | Required ports | Description |
-| -------------- | ---------------------------------- |
-| TCP 27350 to 27358 + 4*N <br /><br /> TCP 443 <br /><br /> TCP 3389 | Ports 27350 to 27358 + 4*N, where N is the maximum number of workers on a single node <br /><br /> HTTPS access to (at least) *.mathworks and *.microsoft.com <br /><br /> Remote Desktop Protocol to access to cluster nodes |
+| -------------- | ----------- |
+| TCP 27350 to 27358 + 4*N | Ports 27350 to 27358 + 4*N, where N is the maximum number of workers on a single node |
+| TCP 443 | HTTPS access to (at least) *.mathworks and *.microsoft.com |
+| TCP 3389 | Remote Desktop Protocol to access to cluster nodes |
 
 *Table 1: Outgoing port requirements*
 
@@ -81,7 +83,7 @@ To access a MATLAB Parallel Server cluster from your client MATLAB, your client 
 You can remove the Resource Group and all associated resources when you are done with them. Note that you cannot recover resources once they are deleted. After you delete the cloud resources you cannot use the downloaded profile again.
 1. Login to the Azure Portal.
 2. Select the Resource Group containing your resources.
-3. Select the "Delete resource group" icon to destroy all resources deplyoyed in this group.
+3. Select the "Delete resource group" icon to destroy all resources deployed in this group.
 4. You will be prompted to enter the name of the resource group to confirm the deletion.
 
     ![Resource Group Delete](../../img/Resource_Group_Delete.png)
