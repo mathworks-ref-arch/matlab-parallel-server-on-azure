@@ -26,6 +26,7 @@ Select a release to continue:
 
 | Release |
 | ------- |
+| [R2022a](releases/R2022a/README.md) |
 | [R2021b](releases/R2021b/README.md) |
 | [R2021a](releases/R2021a/README.md) |
 | [R2020b](releases/R2020b/README.md) |
@@ -66,8 +67,8 @@ The following resources are created.
 
 ### Storage
 * Storage Account (Microsoft.Storage/storageAccounts): A standard geographically redundant storage (GRS) Storage Account which hosts the File Share used to distribute files amongst cluster instances.
-* File Share created inside Storage Account. Created by the head node and mounted by all instances to K: drive.
-    * Used to distribute the Shared Secret created by head node to all worker VMs. The Shared Secret is required for worker instances to register and establish a secure connection with the job scheduler.
+* File Share created inside Storage Account. Created by the headnode and mounted by all instances to K: drive.
+    * Used to distribute the Shared Secret created by headnode to all worker VMs. The Shared Secret is required for worker instances to register and establish a secure connection with the job scheduler.
     * Used to distribute the Cluster Profile to clients. The Cluster Profile is required to authenticate that a user has permission to connect to the cluster.
     * Files uploaded to this File Share will be available to all workers using the K: drive.
 

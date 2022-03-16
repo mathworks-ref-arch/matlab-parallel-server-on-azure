@@ -1,0 +1,455 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "defaultValue": "myCluster",
+      "minLength": 1,
+      "maxLength": 61,
+      "metadata": {
+        "description": "A name to use for this cluster. This name will be shown in MATLAB as the cluster profile name."
+      }
+    },
+    "numWorkerNodes": {
+      "type": "Int",
+      "defaultValue": 2,
+      "minValue": 0,
+      "maxValue": 1000,
+      "metadata": {
+        "description": "The number of Azure instances to start for the workers to run on."
+      }
+    },
+    "numWorkersPerNode": {
+      "type": "Int",
+      "defaultValue": 2,
+      "minValue": 1,
+      "maxValue": 1000,
+      "metadata": {
+        "description": "The number of MATLAB workers to start on each instance. Specify 1 worker for every 2 vCPUs, because this results in 1 worker per physical core. For example a Standard_D64s_v3 instance has 64 vCPUs, so can support 32 MATLAB workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/sizes for details on vCPUs for each instance type."
+      }
+    },
+    "headNodeVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D4s_v3",
+      "metadata": {
+        "description": "The Azure instance type to use for the headnode, which will run the job manager. No workers will be started on this node, so this can be a smaller instance type than the worker nodes. See  https://docs.microsoft.com/en-us/azure/virtual-machines/sizes. for a list of instance types."
+      }
+    },
+    "workerVmSize": {
+      "type": "string",
+      "defaultValue": "Standard_F4s_v2",
+      "metadata": {
+        "description": "The Azure instance type to use for the workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/sizes for a list of instance types."
+      }
+    },
+    "databaseVolumeSize": {
+      "type": "Int",
+      "defaultValue": 100,
+      "minValue": 0,
+      "maxValue": 1023,
+      "metadata": {
+        "description": "The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database."
+      }
+    },
+    "clientIPAddress": {
+      "minLength": 1,
+      "type": "String",
+      "metadata": {
+        "description": "The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value &lt;your_public_ip_address&gt;/32 to restrict access to only your computer."
+      }
+    },
+    "adminPassword": {
+      "type": "SecureString",
+      "metadata": {
+        "description": "Choose the admin password for the user \"matlab\" for all instances. This password is required when logging into any instance using remote desktop protocol. For the deployment to succeed, your password must meet Azure's password requirements. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/faq#what-are-the-password-requirements-when-creating-a-vm- for information on the password requirements."
+      }
+    },
+    "licenseServer": {
+      "defaultValue": "mhlm",
+      "type": "String",
+      "metadata": {
+        "description": "Optional License Manager for MATLAB string in the form port@hostname. If not specified, online licensing is used. If specified, the license manager must be accessible from the specified virtual network and subnets."
+      }
+    }
+  },
+  "variables": {
+    "adminUserName": "matlab",
+    "namingPrefix": "[toLower(take(parameters('clusterName'), 15))]",
+    "ArtifactsBase": "C:/Windows/Temp/",
+    "addressPrefix": "10.0.0.0/16",
+    "subnetPrefix": "10.0.0.0/24",
+    "newOrExistingVirtualNetwork": "New",
+    "virtualNetworkCreateName": "[concat(variables('namingPrefix'), '-vnet')]",
+    "subnetCreateName": "[concat(variables('namingPrefix'), '-subnet')]",
+    "virtualNetworkName": "[if(equals(variables('newOrExistingVirtualNetwork'),'Existing'),last(split(parameters('virtualNetworkResourceID'),'/')),variables('virtualNetworkCreateName'))]",
+    "subnetName": "[if(equals(variables('newOrExistingVirtualNetwork'),'Existing'),parameters('subnetName'),variables('subnetCreateName'))]",
+    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
+    "subnet": "[if(equals(variables('newOrExistingVirtualNetwork'),'New'),variables('subnetRef'),concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName')))]",
+    "cuaTrackingNum": "pid-bcfd52e4-d2d7-4ca3-ba20-9a37f7f85c5f-partnercenter",
+    "headnodeMachineName": "[concat(take(variables('namingPrefix'), 6), '-headnode')]",
+    "vmssName": "[concat(take(variables('namingPrefix'), 4), '-vmss')]",
+    "publisher": "mathworks-inc",
+    "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
+    "sku": "matlab-parallel-server-ref-arch-r2022a-vm-win-sku",
+    "version": "1.0.1",
+    "imageReference": {
+      "publisher": "[variables('publisher')]",
+      "offer": "[variables('offer')]",
+      "sku": "[variables('sku')]",
+      "version": "[variables('version')]"
+    },
+    "plan": {
+      "name": "[variables('sku')]",
+      "publisher": "[variables('publisher')]",
+      "product": "[variables('offer')]"
+    },
+    "osDisk": {
+      "createOption": "fromImage",
+      "managedDisk": {
+        "storageAccountType": "Premium_LRS"
+      }
+    },
+    "storageProfileWithoutDataDisk": {
+      "imageReference": "[variables('imageReference')]",
+      "osDisk": "[variables('osDisk')]"
+    },
+    "storageProfileWithDataDisk": {
+      "imageReference": "[variables('imageReference')]",
+      "osDisk": "[variables('osDisk')]",
+      "dataDisks": [
+        {
+          "name": "[concat(variables('headnodeMachineName'), '-database')]",
+          "diskSizeGB": "[parameters('databaseVolumeSize')]",
+          "lun": 0,
+          "createOption": "Empty",
+          "caching": "None"
+        }
+      ]
+    },
+    "publicIPPostfix": "pub",
+    "headnodeIPName": "[concat(variables('namingPrefix'), variables('publicIPPostfix'))]",
+    "dnsLabelPrefix": "[concat('azure-', uniqueString(resourceGroup().id))]",
+    "publicIpTimeout": "20",
+    "networkInterfacePostfix": "nic",
+    "publicIpConfigPostfix": "ipConfig",
+    "networkSecurityGroupName": "[concat(variables('namingPrefix'), '-nsg')]",
+    "totalPorts": "[add(7, mul(4, parameters('numWorkersPerNode')))]",
+    "startPort": 27350,
+    "finalPort": "[add(variables('startPort'), variables('totalPorts'))]",
+    "storageAccountName": "[concat(take(concat(variables('namingPrefix'), uniquestring(resourceGroup().id)), 17), 'storage')]",
+    "storageAccountType": "Standard_LRS",
+    "scriptsUrl": "C:/Windows/Temp/",
+    "startScript": "startmjs.ps1",
+    "fileUris": [
+      "[concat(variables('scriptsUrl'), variables('startScript'))]",
+      "[concat(variables('scriptsUrl'), 'createFileShare.ps1')]",
+      "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
+    ],
+    "scriptExe": "[concat(variables('ArtifactsBase'), variables('startScript'))]",
+    "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -clusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -licenseServer ', parameters('licenseServer'))]",
+    "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
+    "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
+    "privateIPAddressForNodes": "[concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
+    "tagsForAll": {
+      "provider": "[variables('cuaTrackingNum')]"
+    }
+  },
+  "resources": [
+    {
+      "condition": "[equals(variables('newOrExistingVirtualNetwork'),'New')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[resourceGroup().location]",
+      "tags": "[variables('tagsForAll')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetCreateName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('headnodeIPName')]",
+      "location": "[resourceGroup().location]",
+      "tags": "[variables('tagsForAll')]",
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(variables('headnodeMachineName'), variables('dnsLabelPrefix'))]"
+        },
+        "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[resourceGroup().location]",
+      "tags": "[variables('tagsForAll')]",
+      "sku": {
+        "name": "[variables('storageAccountType')]"
+      },
+      "kind": "Storage",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2020-05-01",
+      "name": "[variables('networkSecurityGroupName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      ],
+      "tags": "[variables('tagsForAll')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "default-allow-rdp",
+            "properties": {
+              "priority": 1000,
+              "sourceAddressPrefix": "[parameters('clientIPAddress')]",
+              "protocol": "Tcp",
+              "destinationPortRange": "3389",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "mathworks-job-scheduler-inbound",
+            "properties": {
+              "priority": 1010,
+              "sourceAddressPrefix": "[parameters('clientIPAddress')]",
+              "protocol": "Tcp",
+              "destinationPortRange": "[concat(variables('startPort'), '-', variables('finalPort'))]",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
+            }
+          },
+          {
+            "name": "allow-internal-traffic",
+            "properties": {
+              "priority": 1020,
+              "sourceAddressPrefix": "VirtualNetwork",
+              "protocol": "Tcp",
+              "destinationPortRange": "*",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "VirtualNetwork"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2020-05-01",
+      "name": "[concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIpAddresses', variables('headnodeIPName'))]",
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+      ],
+      "tags": "[variables('tagsForAll')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnet')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('headnodeIPName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('headnodeMachineName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('headnodeMachineName'), variables('networkInterfacePostfix')))]"
+      ],
+      "tags": "[variables('tagsForAll')]",
+      "plan": "[variables('plan')]",
+      "properties": {
+        "osProfile": {
+          "computerName": "[variables('headnodeMachineName')]",
+          "AdminUsername": "[variables('adminUsername')]",
+          "AdminPassword": "[parameters('AdminPassword')]",
+          "windowsConfiguration": {
+            "provisionVmAgent": true
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('headNodeVmSize')]"
+        },
+        "storageProfile": "[if(greater(parameters('databaseVolumeSize'), 0), variables('storageProfileWithDataDisk'), variables('storageProfileWithoutDataDisk'))]",
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('headnodeMachineName'), variables('networkInterfacePostfix')))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "apiVersion": "2020-06-01",
+      "name": "[concat(variables('headnodeMachineName'), '/Installation')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines/', variables('headnodeMachineName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+      ],
+      "tags": "[variables('tagsForAll')]",
+      "properties": {
+        "publisher": "Microsoft.Compute",
+        "type": "CustomScriptExtension",
+        "typeHandlerVersion": "1.5",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": "[variables('fileUris')]"
+        },
+        "protectedSettings": {
+          "commandToExecute": "[concat(variables('installHeadnodeCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(variables('privateIPAddressForNodes')).ipConfigurations[0].properties.privateIPAddress)]"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachineScaleSets",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('vmssName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIpAddresses/', variables('headnodeIPName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces/', concat(variables('headnodeMachineName'), variables('networkInterfacePostfix')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+      ],
+      "tags": "[variables('tagsForAll')]",
+      "sku": {
+        "name": "[parameters('workerVmSize')]",
+        "tier": "Standard",
+        "capacity": "[parameters('numWorkerNodes')]"
+      },
+      "plan": "[variables('plan')]",
+      "properties": {
+        "overprovision": false,
+        "upgradepolicy": {
+          "mode": "Automatic"
+        },
+        "virtualMachineProfile": {
+          "osProfile": {
+            "computerNamePrefix": "[variables('vmssName')]",
+            "AdminUsername": "[variables('adminUsername')]",
+            "AdminPassword": "[parameters('AdminPassword')]",
+            "windowsConfiguration": {
+              "provisionVmAgent": true
+            }
+          },
+          "storageProfile": "[variables('storageProfileWithoutDataDisk')]",
+          "networkProfile": {
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[concat(variables('vmssName'), variables('networkInterfacePostfix'))]",
+                "properties": {
+                  "primary": true,
+                  "ipConfigurations": [
+                    {
+                      "name": "[concat(variables('vmssName'), variables('publicIpConfigPostfix'))]",
+                      "properties": {
+                        "subnet": {
+                          "id": "[variables('subnet')]"
+                        },
+                        "publicIpAddressConfiguration": {
+                          "name": "[variables('publicIpPostfix')]",
+                          "properties": {
+                            "dnsSettings": {
+                              "domainNameLabel": "[concat(variables('vmssName'), variables('dnsLabelPrefix'))]"
+                            },
+                            "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
+                  }
+                }
+              }
+            ]
+          },
+          "extensionProfile": {
+            "extensions": [
+              {
+                "name": "[concat(variables('vmssName'), 'installation')]",
+                "properties": {
+                  "publisher": "Microsoft.Compute",
+                  "type": "CustomScriptExtension",
+                  "typeHandlerVersion": "1.5",
+                  "autoUpgradeMinorVersion": true,
+                  "settings": {
+                    "fileUris": "[variables('fileUris')]"
+                  },
+                  "protectedSettings": {
+                    "commandToExecute": "[concat(variables('installWorkerCommand'), ' -StorageAccountName ', variables('storageAccountName'), ' -StorageAccountKey ', listKeys(variables('storageAccountName'), '2017-06-01').keys[0].value, ' -HeadnodeExternalHostname ', reference(variables('headnodeIPName')).dnsSettings.fqdn, ' -HeadnodeInternalIPAddress ', reference(variables('privateIPAddressForNodes')).ipConfigurations[0].properties.privateIPAddress)]"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-06-01",
+      "name": "pid-bcfd52e4-d2d7-4ca3-ba20-9a37f7f85c5f-partnercenter",
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachineScaleSets/', variables('vmssName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "virtualNetworkResourceID": {
+      "type": "String",
+      "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
+    }
+  }
+}
