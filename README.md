@@ -4,13 +4,11 @@
 
 Before starting, you will need the following:
 
-- MATLAB Parallel Server™ license. For more information on how to configure your license for cloud use, see [Configure MATLAB Parallel Server Licensing for Cloud Platforms](https://mathworks.com/help/matlab-parallel-server/configure-matlab-parallel-server-licensing-for-cloud-platforms.html). Either:
-    * MATLAB Parallel Server TM license configured to use online licensing for MATLAB.
-    * A network license manager for MATLAB hosting sufficient MATLAB Parallel Server licenses for you cluster. MathWorks provide a reference architecture to deploy a suitable [Network License Manager for MATLAB on Azure](https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure) or an existing license manager can be used.
-
-- MATLAB® and Parallel Computing Toolbox™ on your desktop.
-
-- An Azure™ account.
+* A MATLAB&reg; Parallel Server&trade; license. For more information on how to configure your license for cloud use, see [Configure MATLAB Parallel Server Licensing for Cloud Platforms](https://mathworks.com/help/matlab-parallel-server/configure-matlab-parallel-server-licensing-for-cloud-platforms.html). You can use either of:
+    * A MATLAB Parallel Server license configured to use online licensing for MATLAB.
+    * A network license manager for MATLAB hosting sufficient MATLAB Parallel Server licenses for your cluster. MathWorks&reg; provides a reference architecture to deploy a suitable [Network License Manager for MATLAB on Azure](https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure) or you can use an existing license manager.
+* MATLAB&reg; and Parallel Computing Toolbox&trade; on your desktop.
+* An Azure&reg; account.
 
 # Costs
 You are responsible for the cost of the Azure services used when you create cloud resources using this guide. Resource settings, such as instance type, will affect the cost of deployment. For cost estimates, see the pricing pages for each Azure service you will be using. Prices are subject to change.
@@ -24,15 +22,15 @@ The MATLAB Parallel Server Reference Architecture is released in lockstep with t
 Each reference architecture release has its own instructions as we continue to evolve it. 
 Select a release to continue:
 
-| Release |
-| ------- |
-| [R2022a](releases/R2022a/README.md) |
-| [R2021b](releases/R2021b/README.md) |
-| [R2021a](releases/R2021a/README.md) |
-| [R2020b](releases/R2020b/README.md) |
-| [R2020a](releases/R2020a/README.md) |
-| [R2019b](releases/R2019b/README.md) |
-| [R2019a\_and\_older](releases/R2019a_and_older/README.md) |
+| Windows | Linux |
+| ------- | ----- |
+| [R2022a](releases/R2022a/README.md) | [R2022a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2022a/README.md) |
+| [R2021b](releases/R2021b/README.md) |  |
+| [R2021a](releases/R2021a/README.md) |  |
+| [R2020b](releases/R2020b/README.md) |  |
+| [R2020a](releases/R2020a/README.md) |  |
+| [R2019b](releases/R2019b/README.md) |  |
+| [R2019a\_and\_older](releases/R2019a_and_older/README.md) |  |
 
 
  # Learn About Cluster Architecture 
