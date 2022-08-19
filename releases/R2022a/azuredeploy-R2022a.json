@@ -8,7 +8,7 @@
       "minLength": 1,
       "maxLength": 61,
       "metadata": {
-        "description": "A name to use for this cluster. This name will be shown in MATLAB as the cluster profile name."
+        "description": "Name to use for this cluster. This name will be shown in MATLAB as the cluster profile name."
       }
     },
     "numWorkerNodes": {
@@ -92,7 +92,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2022a-vm-win-sku",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "imageReference": {
       "publisher": "[variables('publisher')]",
       "offer": "[variables('offer')]",
@@ -142,9 +142,7 @@
     "scriptsUrl": "C:/Windows/Temp/",
     "startScript": "startmjs.ps1",
     "fileUris": [
-      "[concat(variables('scriptsUrl'), variables('startScript'))]",
-      "[concat(variables('scriptsUrl'), 'createFileShare.ps1')]",
-      "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
+      "[concat(variables('scriptsUrl'), variables('startScript'))]"
     ],
     "scriptExe": "[concat(variables('ArtifactsBase'), variables('startScript'))]",
     "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -clusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -licenseServer ', parameters('licenseServer'))]",

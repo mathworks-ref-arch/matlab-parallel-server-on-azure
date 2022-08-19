@@ -1,4 +1,4 @@
-# MATLAB Parallel Server on Microsoft Azure (Windows VM)
+# MATLAB Parallel Server on Microsoft Azure
 
 # Requirements
 
@@ -14,26 +14,24 @@ Before starting, you will need the following:
 You are responsible for the cost of the Azure services used when you create cloud resources using this guide. Resource settings, such as instance type, will affect the cost of deployment. For cost estimates, see the pricing pages for each Azure service you will be using. Prices are subject to change.
 
 # Introduction
-The following guide will help you automate the process of launching a Parallel Server for MATLAB, running on Windows virtual machines, using your Azure account. The cloud resources are created using Azure Resource Manager (ARM) templates. For information about the architecture of this solution, see [Learn About Cluster Architecture](#learn-about-cluster-architecture).
+The following guide will help you automate the process of launching a Parallel Server for MATLAB, using your Azure account. The cloud resources are created using Azure Resource Manager (ARM) templates. For information about the architecture of this solution, see [Learn About Cluster Architecture](#learn-about-cluster-architecture).
 
 # Deployment Steps
 
-The MATLAB Parallel Server Reference Architecture is released in lockstep with the bi-annual MATLAB releases. 
-Each reference architecture release has its own instructions as we continue to evolve it. 
-Select a release to continue:
+To view instructions for deploying the MATLAB Parallel Server reference architecture, select a MATLAB release:
 
-| Windows | Linux |
-| ------- | ----- |
-| [R2022a](releases/R2022a/README.md) | [R2022a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2022a/README.md) |
-| [R2021b](releases/R2021b/README.md) |  |
-| [R2021a](releases/R2021a/README.md) |  |
-| [R2020b](releases/R2020b/README.md) |  |
-| [R2020a](releases/R2020a/README.md) |  |
-| [R2019b](releases/R2019b/README.md) |  |
-| [R2019a\_and\_older](releases/R2019a_and_older/README.md) |  |
+| Linux | Windows |
+| ----- | ------- |
+| [R2022a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2022a/README.md) | [R2022a](releases/R2022a/README.md) |
+|  | [R2021b](releases/R2021b/README.md) |
+|  | [R2021a](releases/R2021a/README.md) |
+|  | [R2020b](releases/R2020b/README.md) |
+|  | [R2020a](releases/R2020a/README.md) |
+|  | [R2019b](releases/R2019b/README.md) |
+|  | [R2019a\_and\_older](releases/R2019a_and_older/README.md) |
 
 
- # Learn About Cluster Architecture 
+# Learn About Cluster Architecture
 
 Parallel Computing Toolbox and MATLAB Parallel Server software let you solve computationally and data-intensive programs using MATLAB and Simulink on computer clusters, clouds, and grids. Parallel processing constructs such as parallel-for loops and code blocks, distributed arrays, parallel numerical algorithms, and message-passing functions let you implement task-parallel and data-parallel algorithms at a high level in MATLAB. To learn more see the documentation: [Parallel Computing Toolbox](https://www.mathworks.com/help/parallel-computing/) and [MATLAB Parallel Server](https://www.mathworks.com/help/matlab-parallel-server).
 
@@ -64,11 +62,25 @@ The following resources are created.
 * Worker Scaling Set (Microsoft.Compute/virtualMachineScaleSets): A scale set for worker instances to be launched into. The scaling features are not currently used. The scale set is configured to attach an extension to each instance which configures the instance at deployment time as a worker node of the cluster. Communication between clients and workers is secured using SSL.
 
 ### Storage
-* Storage Account (Microsoft.Storage/storageAccounts): A standard geographically redundant storage (GRS) Storage Account which hosts the File Share used to distribute files amongst cluster instances.
-* File Share created inside Storage Account. Created by the headnode and mounted by all instances to K: drive.
+* Storage Account (Microsoft.Storage/storageAccounts): A standard locally redundant storage (LRS) Storage Account which hosts the File Share used to distribute files amongst cluster instances.
+* File Share created inside Storage Account. Created by the headnode and accessible by all instances.
     * Used to distribute the Shared Secret created by headnode to all worker VMs. The Shared Secret is required for worker instances to register and establish a secure connection with the job scheduler.
     * Used to distribute the Cluster Profile to clients. The Cluster Profile is required to authenticate that a user has permission to connect to the cluster.
-    * Files uploaded to this File Share will be available to all workers using the K: drive.
+    * Files uploaded to this File Share will be available to all workers.
+
+## FAQ
+
+### What skills or specializations do I need to use this Reference Architecture?
+
+No programming or cloud experience required. 
+
+### How long does this process take?
+
+If you already have an Azure account set up and ready to use, you can start a MATLAB Parallel Server Reference Architecture cluster in less than 15 minutes. Startup time will vary depending on the size of your cluster.
+
+### How do I manage limits? 
+
+To learn about setting quotas, see [Azure subscription and service limits](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits).
 
 # Technical Support
 If you require assistance or have a request for additional features or capabilities, please contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).

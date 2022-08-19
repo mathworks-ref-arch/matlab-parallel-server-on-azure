@@ -19,17 +19,17 @@ Clicking the Deploy to Azure button opens the "Custom deployment" page in your b
 
 | Parameter label | Description |
 | --------------- | ----------- |
-| **Name** | A name to use for this cluster. This name will be shown in MATLAB as the cluster profile name. |
-| **Worker Nodes** | The number of Azure instances to start for the workers to run on. |
-| **Workers Per Node** | The number of MATLAB workers to start on each instance. Specify 1 worker for every 2 vCPUs, because this results in 1 worker per physical core. For example a Standard_D64s_v3 instance has 64 vCPUs, so can support 32 MATLAB workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/sizes for details on vCPUs for each instance type. |
-| **Node Vm Size** | The Azure instance type to use for the headnode, which will run the job manager. No workers will be started on this node, so this can be a smaller instance type than the worker nodes. See  https://docs.microsoft.com/en-us/azure/virtual-machines/sizes. for a list of instance types. |
-| **Vm Size** | The Azure instance type to use for the workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/sizes for a list of instance types. |
-| **Volume Size** | The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database. |
-| **IP Address** | The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value &lt;your_public_ip_address&gt;/32 to restrict access to only your computer. |
-| **Password** | Choose the admin password for the user "matlab" for all instances. This password is required when logging into any instance using remote desktop protocol. For the deployment to succeed, your password must meet Azure's password requirements. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/faq#what-are-the-password-requirements-when-creating-a-vm- for information on the password requirements. |
-| **Network Resource ID** | The Resource ID of an existing virtual network to deploy your cluster into. You can find this under the Properties of your virtual network. |
-| **Name** | The name of an existing subnet within your virtual network to deploy your cluster into. |
-| **Server** | Optional License Manager for MATLAB string in the form port@hostname. If not specified, online licensing is used. If specified, the license manager must be accessible from the specified virtual network and subnets. |
+| **Cluster Name** | Name to use for this cluster. This name will be shown in MATLAB as the cluster profile name. |
+| **Num Worker Nodes** | The number of Azure instances to start for the workers to run on. |
+| **Num Workers Per Node** | The number of MATLAB workers to start on each instance. Specify 1 worker for every 2 vCPUs, because this results in 1 worker per physical core. For example a Standard_D64s_v3 instance has 64 vCPUs, so can support 32 MATLAB workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/sizes for details on vCPUs for each instance type. |
+| **Head Node Vm Size** | The Azure instance type to use for the headnode, which will run the job manager. No workers will be started on this node, so this can be a smaller instance type than the worker nodes. See  https://docs.microsoft.com/en-us/azure/virtual-machines/sizes. for a list of instance types. |
+| **Worker Vm Size** | The Azure instance type to use for the workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/sizes for a list of instance types. |
+| **Database Volume Size** | The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database. |
+| **Client IP Address** | The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value &lt;your_public_ip_address&gt;/32 to restrict access to only your computer. |
+| **Admin Password** | Choose the admin password for the user "matlab" for all instances. This password is required when logging into any instance using remote desktop protocol. For the deployment to succeed, your password must meet Azure's password requirements. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/faq#what-are-the-password-requirements-when-creating-a-vm- for information on the password requirements. |
+| **Virtual Network Resource ID** | The Resource ID of an existing virtual network to deploy your cluster into. You can find this under the Properties of your virtual network. Specify this parameter only when deploying with the Existing Virtual Network option. |
+| **Subnet Name** | The name of an existing subnet within your virtual network to deploy your cluster into. Specify this parameter only when deploying with the Existing Virtual Network option. |
+| **License Server** | Optional License Manager for MATLAB string in the form port@hostname. If not specified, online licensing is used. If specified, the license manager must be accessible from the specified virtual network and subnets. |
 
 
 **NOTE**: If you are using network license manager, the port and hostname of the network license manager must be reachable from the MATLAB Parallel Server VMs. It is therefore recommended that you deploy into a subnet within the same virtual network as the network license manager.
