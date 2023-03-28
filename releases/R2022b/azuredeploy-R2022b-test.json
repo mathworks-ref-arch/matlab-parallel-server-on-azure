@@ -166,7 +166,7 @@
         "storageAccountName": "[concat(take(concat(variables('namingPrefix'), uniquestring(resourceGroup().id)), 17), 'storage')]",
         "storageAccountType": "Standard_LRS",
         "startScript": "[concat('C:/Windows/Temp/', 'startmjs.ps1')]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('startScript'), ' -ClusterName ', parameters('clusterName'), ' -NumWorkers ', parameters('numWorkersPerNode'), ' -licenseServer ', parameters('licenseServer'), ' -StorageAccountName ', variables('storageAccountName'))]",
+        "installCommand": "[concat('powershell \"Start-Sleep -Seconds 15\"; ', 'powershell -ExecutionPolicy Unrestricted -File ', variables('startScript'), ' -ClusterName ', parameters('clusterName'), ' -NumWorkers ', parameters('numWorkersPerNode'), ' -licenseServer ', parameters('licenseServer'), ' -StorageAccountName ', variables('storageAccountName'))]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode', ' -EnableAutoscaling ',  parameters('enableAutoscaling'), ' -MaxWorkers ', parameters('maxWorkerNodes'))]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker')]",
         "autoscalingRoleName": "[guid(resourceGroup().id, 'autoscaling-role')]",
