@@ -152,7 +152,7 @@
             "[concat(variables('scriptsUrl'), 'listFileShares.ps1')]"
         ],
         "scriptExe": "[concat(variables('ArtifactsBase'), variables('startScript'))]",
-        "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -clusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -licenseServer ', parameters('licenseServer'))]",
+        "installCommand": "[concat('powershell \"Start-Sleep -Seconds 60\"; powershell -ExecutionPolicy Unrestricted -File ', variables('scriptExe'), ' -clusterName ', parameters('clusterName'), ' -HeadnodeInternalHostname ', variables('headnodeMachineName'), ' -licenseServer ', parameters('licenseServer'))]",
         "installHeadnodeCommand": "[concat(variables('installCommand'), ' -Role headnode -NumWorkers 0')]",
         "installWorkerCommand": "[concat(variables('installCommand'), ' -Role worker -NumWorkers ', parameters('numWorkersPerNode'))]",
         "stopSpoolerServiceCommand": "[concat('powershell -command ','Stop-Service -Name Spooler -Force; Set-Service -Name Spooler -StartupType Disabled')]",
