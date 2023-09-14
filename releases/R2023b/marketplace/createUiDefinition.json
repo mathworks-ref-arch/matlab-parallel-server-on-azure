@@ -1,0 +1,308 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/0.1.2-preview/CreateUIDefinition.MultiVm.json#",
+    "handler": "Microsoft.Azure.CreateUIDef",
+    "version": "0.1.2-preview",
+    "parameters": {
+        "basics": [
+            {
+                "name": "text1",
+                "type": "Microsoft.Common.TextBlock",
+                "visible": true,
+                "options": {
+                    "text": "Need help?",
+                    "link": {
+                        "label": " Click here for instructions",
+                        "uri": "https://www.mathworks.com/help/cloudcenter/ug/run-matlab-parallel-server-from-azure-marketplace.html"
+                    }
+                }
+            }
+        ],
+        "steps": [
+            {
+                "name": "ClusterConfig",
+                "label": "Cluster Settings",
+                "subLabel": {
+                    "preValidation": "Configure virtual machine resources and settings",
+                    "postValidation": "Done"
+                },
+                "bladeTitle": "Cluster Settings",
+                "elements": [
+                    {
+                        "name": "clusterName",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Cluster Name",
+                        "toolTip": "A name to use for this cluster. This name will be shown in MATLAB as the cluster profile name.",
+                        "defaultValue": "myCluster",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^[a-zA-Z][a-zA-Z0-9 _]{1,62}$",
+                            "validationMessage": "Cluster name can only include letters, number, spaces and underscores. It must start with a letter and can be no more than 63 characters."
+                        }
+                    },
+                    {
+                        "name": "numWorkerNodes",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Num Worker Nodes",
+                        "toolTip": "The number of Azure instances to start for the workers to run on.",
+                        "defaultValue": "2",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^([1-9][0-9]{0,2}|1000|0){1,1}$",
+                            "validationMessage": "Num Worker Nodes must be a positive integer between 1-1000."
+                        }
+                    },
+                    {
+                        "name": "minWorkerNodes",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Min Worker Nodes",
+                        "toolTip": "Minimum number of Azure instances that can run at any time.",
+                        "defaultValue": "0",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^(0|[1-9][0-9]{0,2}|1000){1,1}$",
+                            "validationMessage": "Min Worker Nodes must be a positive integer between 0-1000."
+                        }
+                    },
+                    {
+                        "name": "maxWorkerNodes",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Max Worker Nodes",
+                        "toolTip": "Maximum number of Azure instances that can run at any time.",
+                        "defaultValue": "4",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^([1-9][0-9]{0,2}|1000){1,1}$",
+                            "validationMessage": "Max Worker Nodes must be a positive integer between 1-1000."
+                        }
+                    },
+                    {
+                        "name": "numWorkersPerNode",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Num Worker Per Node",
+                        "toolTip": "The number of MATLAB workers to start on each instance. Specify 1 worker for every 2 vCPUs, because this results in 1 worker per physical core. For example a Standard_D64s_v3 instance has 64 vCPUs, so can support 32 MATLAB workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes for details on vCPUs for each instance type.",
+                        "defaultValue": "2",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^([1-9][0-9]{0,2}|1000){1,1}$",
+                            "validationMessage": "Num Worker Per Node must be a positive integer between 1-1000."
+                        }
+                    },
+                    {
+                        "name": "headnodevmSize",
+                        "type": "Microsoft.Compute.SizeSelector",
+                        "label": "Headnode Instance Type",
+                        "toolTip": "The Azure instance type to use for the head node, which will run the job manager. No workers will be started on this node, so this can be a smaller instance type than the worker nodes. See  https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes. for a list of instance types.",
+                        "recommendedSizes": [
+                            "Standard_D4s_v3"
+                        ],
+                        "osPlatform": "Windows",
+                        "count": "1"
+                    },
+                    {
+                        "name": "workervmSize",
+                        "type": "Microsoft.Compute.SizeSelector",
+                        "label": "Worker Instance Type",
+                        "toolTip": "The Azure instance type to use for the workers. See https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes for a list of instance types.",
+                        "recommendedSizes": [
+                            "Standard_F4s_v2"
+                        ],
+                        "osPlatform": "Windows",
+                        "count": "1"
+                    },
+                    {
+                        "name": "databaseVolumeSize",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Database Volume Size",
+                        "toolTip": "The size of the volume in Gigabytes used to store the database files. If set to 0, a separate volume will not be created and the root volume will be used for the database.",
+                        "defaultValue": "100",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^(0|[1-9][0-9]{0,2}|10[0-1][0-9]|102[0-3]){1,1}$",
+                            "validationMessage": "Database Volume Size must be a positive integer between 0-1023."
+                        }
+                    },
+                    {
+                        "name": "clientIPAddress",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Client IP Address",
+                        "toolTip": "The IP address range that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range of the form x.x.x.x/x. Use the value your_public_ip_address/32 to restrict access to only your computer.",
+                        "defaultValue": "",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^([0-9]{1,3}\\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?.{1,1}$",
+                            "validationMessage": "Address must use valid CIDR notation. For example: 192.168.100.14/24"
+                        }
+                    },
+                    {
+                        "name": "adminUsername",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Admin Username",
+                        "toolTip": "Admin username for the cluster. Must be at least 6 characters long and start with an alphabet. To avoid any deployment errors, please check the list of [disallowed values](https://docs.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update?tabs=HTTP#osprofile) for Admin Username.",
+                        "defaultValue": "matlab",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^[a-zA-Z]{6,20}$",
+                            "validationMessage": "The username must be at least 6 characters long and should start with an alphabet."
+                        }
+                    },
+                    {
+                        "name": "adminPassword",
+                        "type": "Microsoft.Common.PasswordBox",
+                        "label": {
+                            "password": "Password",
+                            "confirmPassword": "Confirm Password"
+                        },
+                        "toolTip": "Choose the password for the admin user of the cluster. This password and the chosen admin username are required to login into any instance in the cluster using RDP. For the deployment to succeed, your password must meet Azure's password requirements. See [Password requirements when creating a VM](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/faq?WT.mc_id=Portal-fx#what-are-the-password-requirements-when-creating-a-vm-) for information on the password requirements.",
+                        "constraints": {
+                            "required": true,
+                            "regex": "^((?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])|(?=.*[0-9])(?=.*[a-z])(?=.*[!@#$%^&*])|(?=.*[0-9])(?=.*[A-Z])(?=.*[!@#$%^&*])|(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])).{12,72}$",
+                            "validationMessage": "Password must be at least 12 characters long and have 3 out of the following: one number, one lower case, one upper case, or one special character"
+                        },
+                        "options": {
+                            "hideConfirmation": false
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "licenseServer",
+                        "type": "Microsoft.Common.TextBox",
+                        "label": "Network License Manager (Optional)",
+                        "defaultValue": "",
+                        "toolTip": "Port and hostname or IP address of the virtual machine hosting your Network License Manager.  For example: 27001@10.0.0.1.",
+                        "constraints": {
+                            "required": false,
+                            "regex": "^([1-9][0-9]{0,4}@[0-9.a-zA-Z]+){1,1}$",
+                            "validationMessage": "Port number must be followed by a valid ip address."
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "enableAutoscaling",
+                        "type": "Microsoft.Common.DropDown",
+                        "label": "Enable Autoscaling",
+                        "defaultValue": "No",
+                        "toolTip": "Flag indicating whether instance autoscaling is enabled. For more information about autoscaling, refer to the 'Use Autoscaling' section in the deployment README.",
+                        "constraints": {
+                            "allowedValues": [
+                                {
+                                    "label": "Yes",
+                                    "value": "Yes"
+                                },
+                                {
+                                    "label": "No",
+                                    "value": "No"
+                                }
+                            ],
+                            "required": true
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "text1",
+                        "type": "Microsoft.Common.InfoBox",
+                        "visible": true,
+                        "options": {
+                            "icon": "Info",
+                            "text": "Click here for more information about the Network License Manager on mathworks.com.",
+                            "uri": "https://www.mathworks.com/help/install/license/licensing-for-mathworks-products-running-on-the-cloud.html"
+                        }
+                    },
+                    {
+                        "name": "text2",
+                        "type": "Microsoft.Common.TextBlock",
+                        "visible": true,
+                        "options": {
+                            "text": "Need help?",
+                            "link": {
+                                "label": " Click here for instructions",
+                                "uri": "https://www.mathworks.com/help/cloudcenter/ug/run-matlab-parallel-server-from-azure-marketplace.html"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "networking",
+                "label": "Networking",
+                "subLabel": {
+                    "preValidation": "Configure virtual network resources and settings",
+                    "postValidation": "Done"
+                },
+                "bladeTitle": "Virtual Network",
+                "elements": [
+                    {
+                        "name": "virtualNetwork",
+                        "type": "Microsoft.Network.VirtualNetworkCombo",
+                        "label": {
+                            "virtualNetwork": "Virtual network",
+                            "subnets": "Subnets"
+                        },
+                        "toolTip": {
+                            "virtualNetwork": "Name of the Virtual Network resource to use. By default a new resource is created and added to the resource group.",
+                            "subnets": "A subnet is a range of IP addresses in your virtual network, which can be used to isolate virtual machines from each other or from the Internet."
+                        },
+                        "defaultValue": {
+                            "name": "vnet01",
+                            "addressPrefixSize": "/16"
+                        },
+                        "constraints": {
+                            "minAddressPrefixSize": "/16"
+                        },
+                        "options": {
+                            "hideExisting": false
+                        },
+                        "subnets": {
+                            "subnet1": {
+                                "label": "Subnet",
+                                "defaultValue": {
+                                    "name": "subnet-1",
+                                    "addressPrefixSize": "/24"
+                                },
+                                "constraints": {
+                                    "minAddressPrefixSize": "/24",
+                                    "minAddressCount": 12,
+                                    "requireContiguousAddresses": true
+                                }
+                            }
+                        },
+                        "visible": true
+                    },
+                    {
+                        "name": "text3",
+                        "type": "Microsoft.Common.TextBlock",
+                        "visible": true,
+                        "options": {
+                            "text": "Need help?",
+                            "link": {
+                                "label": " Click here for instructions",
+                                "uri": "https://www.mathworks.com/help/cloudcenter/ug/run-matlab-parallel-server-from-azure-marketplace.html"
+                            }
+                        }
+                    }
+                ]
+            }
+        ],
+        "outputs": {
+            "location": "[location()]",
+            "clusterName": "[steps('ClusterConfig').clusterName]",
+            "numWorkerNodes": "[int(steps('ClusterConfig').numWorkerNodes)]",
+            "minWorkerNodes": "[int(steps('ClusterConfig').minWorkerNodes)]",
+            "maxWorkerNodes": "[int(steps('ClusterConfig').maxWorkerNodes)]",
+            "numWorkersPerNode": "[int(steps('ClusterConfig').numWorkersPerNode)]",
+            "headnodevmSize": "[steps('ClusterConfig').headnodevmSize]",
+            "workervmSize": "[steps('ClusterConfig').workervmSize]",
+            "databaseVolumeSize": "[int(steps('ClusterConfig').databaseVolumeSize)]",
+            "adminUsername": "[steps('ClusterConfig').adminUsername]",
+            "adminPassword": "[steps('ClusterConfig').adminPassword]",
+            "licenseServer": "[steps('ClusterConfig').licenseServer]",
+            "enableAutoscaling": "[steps('ClusterConfig').enableAutoscaling]",
+            "clientIPAddress": "[steps('ClusterConfig').clientIPAddress]",
+            "virtualNetworkNewOrExisting": "[steps('networking').virtualNetwork.newOrExisting]",
+            "virtualNetworkName": "[steps('networking').virtualNetwork.name]",
+            "addressPrefix": "[steps('networking').virtualNetwork.addressPrefixes]",
+            "subnetName": "[steps('networking').virtualNetwork.subnets.subnet1.name]",
+            "subnetPrefix": "[steps('networking').virtualNetwork.subnets.subnet1.addressPrefix]",
+            "virtualNetworkResourceGroupName": "[steps('networking').virtualNetwork.resourceGroup]"
+        }
+    }
+}

@@ -4,7 +4,7 @@
 
 Before starting, you will need the following:
 
-* A MATLAB&reg; Parallel Server&trade; license. For more information on how to configure your license for cloud use, see [Configure MATLAB Parallel Server Licensing for Cloud Platforms](https://mathworks.com/help/matlab-parallel-server/configure-matlab-parallel-server-licensing-for-cloud-platforms.html). You can use either of:
+* A MATLAB&reg; Parallel Server&trade; license. For more information on how to configure your license for cloud use, see [Configure MATLAB Parallel Server Licensing for Cloud Platforms](https://www.mathworks.com/help/matlab-parallel-server/configure-matlab-parallel-server-licensing-for-cloud-platforms.html). You can use either of:
     * A MATLAB Parallel Server license configured to use online licensing for MATLAB.
     * A network license manager for MATLAB hosting sufficient MATLAB Parallel Server licenses for your cluster. MathWorks&reg; provides a reference architecture to deploy a suitable [Network License Manager for MATLAB on Azure](https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure) or you can use an existing license manager.
 * MATLAB&reg; and Parallel Computing Toolbox&trade; on your desktop.
@@ -22,6 +22,7 @@ To view instructions for deploying the MATLAB Parallel Server reference architec
 
 | Linux | Windows |
 | ----- | ------- |
+| [R2023b](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2023b/README.md) | [R2023b](releases/R2023b/README.md) |
 | [R2023a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2023a/README.md) | [R2023a](releases/R2023a/README.md) |
 | [R2022b](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2022b/README.md) | [R2022b](releases/R2022b/README.md) |
 | [R2022a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2022a/README.md) | [R2022a](releases/R2022a/README.md) |
@@ -41,7 +42,7 @@ The MATLAB Job Scheduler is a built-in scheduler that ships with MATLAB Parallel
 
 Microsoft Azure is a set of cloud services which allow you to build, deploy, and manage applications hosted in Microsoft’s global network of data centres. This document will help you launch a compute cluster using compute, storage, and network services hosted by Azure. For more information about the range of services offered by Microsoft Azure, see [Azure Services](https://azure.microsoft.com/en-gb/services/). Services launched in Azure can be created, managed, and deleted using the Azure Portal UI. For more information about the Azure Portal, see [Azure Portal](https://azure.microsoft.com/en-gb/features/azure-portal/).
 
-The MATLAB Job Scheduler and the resources required by it are created using [Azure Resource Manager templates](https://docs.microsoft.com/en-gb/azure/azure-resource-manager/resource-group-overview). The architecture of the cluster resources created by the template is illustrated in Figure 2. For more information about each resource, see the [Azure template reference.](https://docs.microsoft.com/en-us/azure/templates/)
+The MATLAB Job Scheduler and the resources required by it are created using [Azure Resource Manager templates](https://learn.microsoft.com/en-gb/azure/azure-resource-manager/resource-group-overview). The architecture of the cluster resources created by the template is illustrated in Figure 2. For more information about each resource, see the [Azure template reference.](https://learn.microsoft.com/en-us/azure/templates/)
 
 ![Cluster Architecture](img/Azure_Solution_Scale_Set.png?raw=true)
 
@@ -82,7 +83,13 @@ If you already have an Azure account set up and ready to use, you can start a MA
 
 ### How do I manage limits? 
 
-To learn about setting quotas, see [Azure subscription and service limits](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits).
+To learn about setting quotas, see [Azure subscription and service limits](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits).
 
 # Technical Support
 If you require assistance or have a request for additional features or capabilities, please contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).
+
+----
+
+Copyright 2018-2023 The MathWorks, Inc.
+
+----
