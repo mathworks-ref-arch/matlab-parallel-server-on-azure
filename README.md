@@ -105,6 +105,22 @@ If you already have an Azure account set up and ready to use, you can start a MA
 
 To learn about setting quotas, see [Azure subscription and service limits](https://learn.microsoft.com/azure/azure-resource-manager/management/azure-subscription-service-limits).
 
+### What is an Azure Spot Virtual Machine, and what factors should I consider before enabling it?
+
+Spot Virtual Machines allow you to use Azure VMs at a reduced cost. Azure uses Spot Virtual Machines to sell unused instances within their data centers. However, Azure can reclaim these Virtual Machines at any time. For more details, see the Azure documentation on [Spot Virtual Machines](https://azure.microsoft.com/products/virtual-machines/spot).
+
+Before enabling Spot Virtual Machines, consider these aspects:
+
+* Pricing: Spot Virtual Machines offer discounts compared to On-Demand Virtual Machines. The actual discount depends on the available unused capacity of the Virtual Machines within the Availability Zone (AZ). For more details, refer to the [Azure documentation](https://azure.microsoft.com/pricing/details/virtual-machines/linux/).
+
+* Behavior of your cluster when Azure reclaims a Spot Virtual Machine: Spot Virtual Machines are used only for the worker nodes, whereas the head node always uses an On-Demand Virtual Machine. This is to ensure that you do not lose any user job and task information when an Virtual Machine is reclaimed by Azure. If a spot Virtual Machine for a worker is interrupted when it is running a task, the task is marked as failed. Jobs in the queue are run when a new worker instance is available. For more information, refer to [How Parallel Computing Toolbox Runs a Job](https://www.mathworks.com/help/parallel-computing/how-parallel-computing-products-run-a-job.html).
+
+* The following VM sizes are not supported for Azure Spot Virtual Machines:
+    * B-series
+    * Promo versions of any size (like Dv2, NV, NC, H promo sizes)
+
+For more information about the limitations of using Spot Virtual Machines, refer to [Azure Spot Virtual Machines for Virtual Machine Scale Sets](https://learn.microsoft.com/azure/virtual-machine-scale-sets/use-spot).
+
 # Technical Support
 If you require assistance or have a request for additional features or capabilities, contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).
 

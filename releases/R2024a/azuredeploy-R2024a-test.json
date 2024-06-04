@@ -79,6 +79,17 @@
                 "description": "Azure VM size to use for the workers. By default, the heap memory for all worker process is set between 1024 MiB and a maximum of a quarter of the VM memory, depending on the number of MATLAB workers on the VM. See https://learn.microsoft.com/azure/virtual-machines/sizes for a list of VMs."
             }
         },
+        "useSpotInstancesForWorkerNodes": {
+            "defaultValue": "No",
+            "type": "string",
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Option indicating whether to enable Azure Spot Virtual Machines for worker nodes. For more information, refer to the FAQ section in the deployment README."
+            }
+        },
         "databaseVolumeSize": {
             "type": "Int",
             "defaultValue": 100,
@@ -229,7 +240,8 @@
             "[concat('$Env:MaxNodes=', parameters('maxWorkerNodes'))]"
         ],
         "startupParametersWorker": [
-            "$Env:NodeType='worker'"
+            "$Env:NodeType='worker'",
+            "[concat('$Env:USE_SPOT_INSTANCE=\"', parameters('UseSpotInstancesForWorkerNodes'), '\"')]"
         ],
         "autoscalingRoleName": "[guid(resourceGroup().id, 'autoscaling-role')]",
         "privateIPAddressForNodes": "[concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
@@ -518,7 +530,18 @@
                 "upgradepolicy": {
                     "mode": "Automatic"
                 },
+                "singlePlacementGroup": "[if(equals(parameters('useSpotInstancesForWorkerNodes'), 'Yes'), bool('true'), json('null'))]",
                 "virtualMachineProfile": {
+                    "priority": "[if(equals(parameters('useSpotInstancesForWorkerNodes'), 'Yes'), 'Spot', 'Regular')]",
+                    "evictionPolicy": "[if(equals(parameters('useSpotInstancesForWorkerNodes'), 'Yes'), 'Delete', json('null'))]",
+                    "billingProfile": {
+                        "maxPrice": "[if(equals(parameters('useSpotInstancesForWorkerNodes'), 'Yes'), -1, json('null'))]"
+                    },
+                    "scheduledEventsProfile": {
+                        "terminateNotificationProfile": {
+                            "enable": true
+                        }
+                    },
                     "osProfile": {
                         "computerNamePrefix": "[variables('vmssName')]",
                         "AdminUsername": "[parameters('adminUsername')]",

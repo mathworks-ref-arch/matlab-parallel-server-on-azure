@@ -2,6 +2,13 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Location for the resources."
+      }
+    },
     "clusterName": {
       "type": "string",
       "defaultValue": "myCluster",
@@ -101,13 +108,6 @@
         "description": "Choose the password for the admin user of the cluster. This password and the chosen admin username are required to login into any VM in the cluster using RDP. For the deployment to succeed, your password must meet Azure's password requirements. See [Password requirements when creating a VM](https://learn.microsoft.com/azure/virtual-machines/windows/faq?WT.mc_id=Portal-fx#what-are-the-password-requirements-when-creating-a-vm-) for information on the password requirements."
       }
     },
-    "licenseServer": {
-      "defaultValue": "",
-      "type": "String",
-      "metadata": {
-        "description": "Optional License Manager for MATLAB, specified as a string in the form port@hostname. If not specified, online licensing is used. Otherwise, license manager must be accessible from the specified virtual network and subnets. For more information, see https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure."
-      }
-    },
     "MJSSecurityLevel": {
       "metadata": {
         "description": "Security level for the cluster. Level 0: Any user can access any jobs and tasks. Level 1: Accessing other users' jobs and tasks issues a warning. However, all users can still perform all actions. Level 2: Users must enter a password to access their jobs and tasks. The job owner can grant access to other users."
@@ -148,6 +148,57 @@
       "metadata": {
         "description": "Provide an optional inline PowerShell command to run on machine launch. For example, to set an environment variable CLOUD=AZURE, use this command excluding the angle brackets: &lt;[System.Environment]::SetEnvironmentVariable(\"CLOUD\",\"AZURE\", \"Machine\");&gt;. You can use either double quotes or two single quotes. To run an external script, use this command excluding the angle brackets: &lt;Invoke-WebRequest \"https://www.example.com/script.ps1\" -OutFile script.ps1; .\\script.ps1&gt;. Find the logs at '$Env:ProgramData\\MathWorks\\startup.log'."
       }
+    },
+    "virtualNetworkNewOrExisting": {
+      "type": "string",
+      "defaultValue": "new",
+      "metadata": {
+        "description": "Determines whether a new or existing virtual network should be provisioned."
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "defaultValue": "VirtualNetwork",
+      "metadata": {
+        "description": "Name of the virtual network."
+      }
+    },
+    "addressPrefix": {
+      "type": "array",
+      "defaultValue": [
+        "10.0.0.0/16"
+      ],
+      "metadata": {
+        "description": "Address prefix of the virtual network."
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "defaultValue": "default",
+      "metadata": {
+        "description": "Name of the subnet."
+      }
+    },
+    "subnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/24",
+      "metadata": {
+        "description": "Subnet prefix of the virtual network."
+      }
+    },
+    "licenseServer": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "Optional License Manager for MATLAB string in the form port@hostname. If not specified, online licensing is used. If specified, the license manager must be accessible from the specified virtual network and subnets."
+      }
+    },
+    "virtualNetworkResourceGroupName": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "Name of the resource group for the existing virtual network."
+      }
     }
   },
   "variables": {
@@ -156,15 +207,8 @@
     "windowsVMSSNameLengthLimit": 9,
     "resourceGroupUniqueString": "[uniqueString(resourceGroup().id)]",
     "namingPrefix": "[concat(variables('fixedPrefix'), '-', variables('resourceGroupUniqueString'))]",
-    "addressPrefix": "10.0.0.0/16",
-    "subnetPrefix": "10.0.0.0/24",
-    "newOrExistingVirtualNetwork": "New",
-    "virtualNetworkCreateName": "[concat(variables('namingPrefix'), '-vnet')]",
-    "subnetCreateName": "[concat(variables('namingPrefix'), '-subnet')]",
-    "virtualNetworkName": "[if(equals(variables('newOrExistingVirtualNetwork'),'Existing'),last(split(parameters('virtualNetworkResourceID'),'/')),variables('virtualNetworkCreateName'))]",
-    "subnetName": "[if(equals(variables('newOrExistingVirtualNetwork'),'Existing'),parameters('subnetName'),variables('subnetCreateName'))]",
-    "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]",
-    "subnet": "[if(equals(variables('newOrExistingVirtualNetwork'),'New'),variables('subnetRef'),concat(parameters('virtualNetworkResourceID'), '/subnets/', parameters('subnetName')))]",
+    "addressPrefix": "[parameters('addressPrefix')]",
+    "subnetPrefix": "[parameters('subnetPrefix')]",
     "cuaTrackingNum": "pid-bcfd52e4-d2d7-4ca3-ba20-9a37f7f85c5f-partnercenter",
     "headnodeMachineName": "[concat(take(variables('fixedPrefix'), sub(variables('windowsVMNameLengthLimit'), length('-headnode'))), '-headnode')]",
     "vmssName": "[concat(take(variables('fixedPrefix'), sub(variables('windowsVMSSNameLengthLimit'), length('-vmss'))), '-vmss')]",
@@ -262,25 +306,29 @@
       "mwMaxCount": "[parameters('maxWorkerNodes')]",
       "mwWorkersPerNode": "[parameters('numWorkersPerNode')]",
       "mwWorkerIdleTimeoutMinutes": 10
-    }
+    },
+    "newVirtualNetwork": "[equals(parameters('virtualNetworkNewOrExisting'), 'new')]",
+    "newVirtualNetworkID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "existingVirtualNetworkID": "[resourceId(parameters('virtualNetworkResourceGroupName'), 'Microsoft.Networks/virtualNetworks/', parameters('virtualNetworkName'))]",
+    "subnetID": "[if(variables('newVirtualNetwork'), concat(variables('newVirtualNetworkID'), '/subnets/', parameters('subnetName')), concat(variables('existingVirtualNetworkID'), '/subnets/', parameters('subnetName')))]",
+    "licenseServer": "[if(equals(parameters('licenseServer'),''),'mhlm',parameters('licenseServer'))]",
+    "installCommand": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('startScript'), ' -ClusterName ', parameters('clusterName'), ' -NumWorkers ', parameters('numWorkersPerNode'), ' -LicenseServer ', variables('licenseServer'), ' -StorageAccountName ', variables('storageAccountName'))]"
   },
   "resources": [
     {
-      "condition": "[equals(variables('newOrExistingVirtualNetwork'),'New')]",
+      "condition": "[variables('newVirtualNetwork')]",
       "type": "Microsoft.Network/virtualNetworks",
       "apiVersion": "2022-01-01",
-      "name": "[variables('virtualNetworkName')]",
-      "location": "[resourceGroup().location]",
+      "name": "[parameters('virtualNetworkName')]",
+      "location": "[parameters('location')]",
       "tags": "[variables('tagsForAll')]",
       "properties": {
         "addressSpace": {
-          "addressPrefixes": [
-            "[variables('addressPrefix')]"
-          ]
+          "addressPrefixes": "[variables('addressPrefix')]"
         },
         "subnets": [
           {
-            "name": "[variables('subnetCreateName')]",
+            "name": "[parameters('subnetName')]",
             "properties": {
               "addressPrefix": "[variables('subnetPrefix')]"
             }
@@ -292,7 +340,7 @@
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2022-01-01",
       "name": "[variables('headnodeIPName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "tags": "[variables('tagsForAll')]",
       "properties": {
         "publicIPAllocationMethod": "Static",
@@ -306,7 +354,7 @@
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2022-09-01",
       "name": "[variables('storageAccountName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "tags": "[variables('tagsForAll')]",
       "sku": {
         "name": "[variables('storageAccountType')]"
@@ -318,9 +366,9 @@
       "type": "Microsoft.Network/networkSecurityGroups",
       "apiVersion": "2022-01-01",
       "name": "[variables('networkSecurityGroupName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+        "[resourceId('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]"
       ],
       "tags": "[variables('tagsForAll')]",
       "properties": {
@@ -371,7 +419,7 @@
       "type": "Microsoft.Network/networkInterfaces",
       "apiVersion": "2022-01-01",
       "name": "[concat(variables('headnodeMachineName'), variables('networkInterfacePostfix'))]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIpAddresses', variables('headnodeIPName'))]",
         "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
@@ -383,7 +431,7 @@
             "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
             "properties": {
               "subnet": {
-                "id": "[variables('subnet')]"
+                "id": "[variables('subnetID')]"
               },
               "privateIPAllocationMethod": "Dynamic",
               "publicIpAddress": {
@@ -401,7 +449,7 @@
       "type": "Microsoft.Compute/virtualMachines",
       "apiVersion": "2022-08-01",
       "name": "[variables('headnodeMachineName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('headnodeMachineName'), variables('networkInterfacePostfix')))]",
         "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
@@ -504,7 +552,7 @@
       "type": "Microsoft.Compute/virtualMachineScaleSets",
       "apiVersion": "2022-08-01",
       "name": "[variables('vmssName')]",
-      "location": "[resourceGroup().location]",
+      "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIpAddresses/', variables('headnodeIPName'))]",
         "[resourceId('Microsoft.Network/networkInterfaces/', concat(variables('headnodeMachineName'), variables('networkInterfacePostfix')))]",
@@ -554,7 +602,7 @@
                       "name": "[concat(variables('vmssName'), variables('publicIpConfigPostfix'))]",
                       "properties": {
                         "subnet": {
-                          "id": "[variables('subnet')]"
+                          "id": "[variables('subnetID')]"
                         },
                         "publicIpAddressConfiguration": {
                           "name": "[variables('publicIpPostfix')]",
@@ -611,11 +659,5 @@
         }
       }
     }
-  ],
-  "outputs": {
-    "virtualNetworkResourceID": {
-      "type": "String",
-      "value": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]"
-    }
-  }
+  ]
 }
