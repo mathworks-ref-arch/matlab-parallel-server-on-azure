@@ -182,7 +182,7 @@
       "defaultValue": "",
       "type": "String",
       "metadata": {
-        "description": "Provide an optional inline PowerShell command to run on machine launch. For example, to set an environment variable CLOUD=AZURE, use this command excluding the angle brackets: &lt;[System.Environment]::SetEnvironmentVariable(\"CLOUD\",\"AZURE\", \"Machine\");&gt;. You can use either double quotes or two single quotes. To run an external script, use this command excluding the angle brackets: &lt;Invoke-WebRequest \"https://www.example.com/script.ps1\" -OutFile script.ps1; .\\script.ps1&gt;. Find the logs at '$Env:ProgramData\\MathWorks\\startup.log'."
+        "description": "Provide an optional inline PowerShell command to run on machine launch. For example, to set an environment variable CLOUD=AZURE, use this command excluding the angle brackets: &lt;[System.Environment]::SetEnvironmentVariable(\"CLOUD\",\"AZURE\", \"Machine\");&gt;. You can use either double quotes or two single quotes. To run an external script, use this command excluding the angle brackets: &lt;Invoke-WebRequest \"https://www.example.com/script.ps1\" -OutFile script.ps1; .\\script.ps1&gt;. Find the logs at 'C:\\ProgramData\\MathWorks\\startup.log'."
       }
     }
   },
@@ -207,7 +207,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2024b-vm-win-sku",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "imageReference": {
       "publisher": "[variables('publisher')]",
       "offer": "[variables('offer')]",
@@ -255,12 +255,13 @@
     "storageAccountName": "[concat('mwstorage', variables('resourceGroupUniqueString'))]",
     "storageAccountType": "Standard_LRS",
     "userDataScript": [
-      "# Copyright 2023 The MathWorks, Inc.",
+      "# Copyright 2023-2024 The MathWorks, Inc.",
+      "",
+      "Start-Transcript -Path $Env:ProgramData\\MathWorks\\startup.log -Append",
       "$StartupFolder = \"$Env:ProgramFiles\\MathWorks\\startup\"",
       "# Load startup variables",
-      "If (Test-Path $StartupFolder\\env.ps1) {",
-      "    . $StartupFolder\\env.ps1",
-      "}",
+      ". $StartupFolder\\env.ps1",
+      "",
       "# Define startup parameters",
       "[concat('$Env:JobManagerName=\"', parameters('clusterName'), '\"')]",
       "[concat('$Env:WorkersPerNode=\"', parameters('numWorkersPerNode'), '\"')]",
@@ -269,11 +270,20 @@
       "[concat('$Env:SchedulingAlgorithm=\"', parameters('MJSSchedulingAlgorithm'), '\"')]",
       "[concat('$Env:AZURE_STORAGE_ACCOUNT=\"', variables('storageAccountName'), '\"')]",
       "{{NODE_SPECIFIC_PARAMETERS}}",
-      "[concat('$Env:OptionalUserCommand=', '''', parameters('optionalUserCommand'), '''')]",
+      "[concat('$Env:OptionalUserCommand=', '''', base64(parameters('optionalUserCommand')), '''')]",
+      "",
+      "# Decode and execute the optional user command",
+      "if ([string]::IsNullOrWhiteSpace(\"$Env:OptionalUserCommand\")) {",
+      "    Write-Output \"No optional user command was passed.\"",
+      "} else {",
+      "    Write-Output \"Decoding and executing the optional user command...\"",
+      "    $DecodedCommand = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($Env:OptionalUserCommand))",
+      "    Write-Output \"Decoded Command: $DecodedCommand\"",
+      "    Invoke-Expression $DecodedCommand",
+      "}",
       "",
       "# Run startup scripts",
-      "Start-Transcript -Path $Env:ProgramData\\MathWorks\\startup.log -Append",
-      "Get-ChildItem $StartupFolder | Where-Object { $_ -match '^[0-9]+_.+$' } | Sort-Object | ForEach-Object { Write-Output \"startup: executing $_\"; & $_.FullName }",
+      "Get-ChildItem $StartupFolder | Where-Object { $_ -match '^[0-9]+_.+$' } | Sort-Object | ForEach-Object { Write-Output \"Startup: executing $_\"; $executionTime = Measure-Command { & $_.FullName }; Write-Output \"Execution time for $($_.Name): $($executionTime.TotalSeconds) seconds\" }",
       "Stop-Transcript"
     ],
     "terminationPolicy": "[if(equals(parameters('automaticallyTerminateCluster'), 'When cluster is idle'), 'on_idle', if(equals(parameters('automaticallyTerminateCluster'),'Never'),'never',parameters('automaticallyTerminateCluster')))]",

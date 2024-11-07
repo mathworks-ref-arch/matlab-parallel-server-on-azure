@@ -38,7 +38,7 @@ Clicking the **Deploy to Azure** button opens the "Custom deployment" page in yo
 | **Enable Autoscaling** | Option indicating whether VM autoscaling is enabled. For more information about autoscaling, refer to the 'Use Autoscaling' section in the deployment README. |
 | **Automatically Terminate Cluster** | Option to autoterminate the cluster after a few hours or when idle. When the cluster is terminated, all worker nodes are deleted and the headnode is deallocated. Select 'Never' to disable auto-termination now but you can enable it later. Select 'Disable auto-termination' to fully disable this feature or if you do not have the permissions to create and assign roles in your subscription. For more information, see [Automatically terminate the MATLAB Parallel Server cluster](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin#automatically-terminate-the-matlab-parallel-server-cluster). |
 | **MJS Scheduling Algorithm** | Scheduling algorithm for the job manager. 'standard' spreads communicating jobs across as few worker machines as possible to reduce communication overheads and fills in unused spaces on worker machines with independent jobs. Suitable for good behavior for a wide range of uses including autoscaling. 'loadBalancing' distributes load evenly across the cluster to give as many resources as possible to running jobs and tasks when the cluster is underutilized. |
-| **Optional User Command** | Provide an optional inline PowerShell command to run on machine launch. For example, to set an environment variable CLOUD=AZURE, use this command excluding the angle brackets: &lt;[System.Environment]::SetEnvironmentVariable("CLOUD","AZURE", "Machine");&gt;. You can use either double quotes or two single quotes. To run an external script, use this command excluding the angle brackets: &lt;Invoke-WebRequest "https://www.example.com/script.ps1" -OutFile script.ps1; .\script.ps1&gt;. Find the logs at '$Env:ProgramData\MathWorks\startup.log'. |
+| **Optional User Command** | Provide an optional inline PowerShell command to run on machine launch. For example, to set an environment variable CLOUD=AZURE, use this command excluding the angle brackets: &lt;[System.Environment]::SetEnvironmentVariable("CLOUD","AZURE", "Machine");&gt;. You can use either double quotes or two single quotes. To run an external script, use this command excluding the angle brackets: &lt;Invoke-WebRequest "https://www.example.com/script.ps1" -OutFile script.ps1; .\script.ps1&gt;. Find the logs at 'C:\ProgramData\MathWorks\startup.log'. |
 
 
 **NOTE**: If you are using the network license manager, the port and hostname of the network license manager must be reachable from the MATLAB Parallel Server&trade; virtual machines (VMs). Deploying into a subnet within the same virtual network as the network license manager is a best practice.
@@ -87,15 +87,21 @@ You can remove the resource group and all associated resources when you are done
 
 # Additional Information
 
-## Access Requirements for MATLAB Parallel Server
+## Port Requirements 
 
-To access a MATLAB Parallel Server cluster from your client MATLAB, your client machine must be able to communicate on specific ports. Make sure that the network firewall allows the following outgoing connections.
+Before you can use your MATLAB Parallel Server cluster, you must configure certain required ports on the cluster and client firewall. These ports allow your client machine to connect to the cluster headnode and facilitate communication between the cluster nodes. 
+
+### Cluster Nodes 
+
+For details about the port requirements for cluster nodes, see this information from MathWorks® Support Team on MATLAB Answers: [How do I configure MATLAB Parallel Server using the MATLAB Job Scheduler to work within a firewall?]( https://www.mathworks.com/matlabcentral/answers/94254-how-do-i-configure-matlab-parallel-server-using-the-matlab-job-scheduler-to-work-within-a-firewall). 
+
+Additionally, if your client machine is outside the cluster’s network, then you must configure the network security group of your cluster to allow incoming traffic from your client machine on the following ports. For information on how to configure your network security group, see [Create a security rule](https://learn.microsoft.com/azure/virtual-network/manage-network-security-group). To troubleshoot, see this [page](https://learn.microsoft.com/troubleshoot/azure/virtual-machines/windows/troubleshoot-rdp-nsg-problem).  
 
 | Required ports | Description |
 | -------------- | ----------- |
-| TCP 27350 to 27358 + 4*N | Ports 27350 to 27358 + 4*N, where N is the maximum number of workers on a single node |
-| TCP 443 | HTTPS access to (at least) *.mathworks and *.microsoft.com |
-| TCP 3389 | Remote Desktop Protocol to access to cluster nodes |
+| TCP 27350 to 27358 + 4*N | For connecting to the job manager on the cluster headnode and to the worker nodes for parallel pools. Calculate the required ports based on N, the maximum number of workers on any single node across the entire cluster.  |
+| TCP 443 | If you are using online licensing, you must open this port for outbound communication from all cluster machines. If you’re using Network License Manager instead, then you must configure ports as listed on [Network License Manager for MATLAB on Microsoft Azure](https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure?tab=readme-ov-file#networking-resources).   |
+| TCP 3389 | Remote Desktop Protocol to access to cluster nodes. |
 
 *Table 1: Outgoing port requirements*
 
@@ -139,7 +145,7 @@ Invoke-WebRequest "https://<your_storage_account>.blob.core.windows.net/<contain
 ## Troubleshooting
 If your resource group fails to deploy, check the Deployments section of the Resource Group. This section indicates which resource deployments failed and allow you to navigate to the causing error message.
 
-If the resource group deployed successfully but you are unable to validate the cluster, check the logs on the instances to diagnose the error. The deployment logs are output to C:\ProgramData\MathWorks\MDCSLog-*.log on the instance nodes. The cluster logs are output to C:\ProgramData\MJS\Log.
+If the resource group deployed successfully but you are unable to validate the cluster, check the logs on the instances to diagnose the error. The deployment logs are output to C:\ProgramData\MathWorks\MDCSLog-*.log on the instance nodes. The cluster logs are output to C:\ProgramData\MJS\Log. The system startup logs are output to C:\ProgramData\MathWorks\startup.log on every instance of the cluster.
 
 ----
 
