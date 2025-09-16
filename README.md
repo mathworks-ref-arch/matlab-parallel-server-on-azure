@@ -23,6 +23,7 @@ To view instructions for deploying the MATLAB Parallel Server reference architec
 
 | Linux | Windows |
 | ----- | ------- |
+| [R2025b](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2025b/README.md) | [R2025b](releases/R2025b/README.md) |
 | [R2025a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2025a/README.md) | [R2025a](releases/R2025a/README.md) |
 | [R2024b](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2024b/README.md) | [R2024b](releases/R2024b/README.md) |
 | [R2024a](https://github.com/mathworks-ref-arch/matlab-parallel-server-on-azure-lin/tree/master/releases/R2024a/README.md) | [R2024a](releases/R2024a/README.md) |
