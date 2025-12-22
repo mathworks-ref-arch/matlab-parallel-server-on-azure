@@ -81,12 +81,12 @@
         "description": "Size in GB of the volume to store the database files. All job and task information, including input and output data, is stored on this volume and so it must have enough capacity to store the expected amount of data. If set to 0, no volume is created and the root volume of the VM is used for the database."
       }
     },
-    "clientIPAddress": {
+    "clientIPAddressList": {
       "type": "string",
       "defaultValue": "",
       "minLength": 7,
       "metadata": {
-        "description": "A list of comma separated IP address ranges that can be used to access the license manager. These must be valid IP CIDR ranges of the form x.x.x.x/x. Use the value &lt;your_client_ip_address&gt;/32 to restrict access to only your computer."
+        "description": "Comma-separated list of IPv4 address ranges that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range. Example: 10.0.0.0/16,12.34.5.0/24 or 34.56.78.10/32. To build a specific range, you can use this tool: https://www.ipaddressguide.com/cidr. To determine which address is appropriate, contact your IT administrator."
       }
     },
     "adminUsername": {
@@ -228,7 +228,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2025b-vm-win-sku",
-    "version": "20252.1.563489",
+    "version": "20252.2.623060",
     "imageResourceID": {
       "id": "[parameters('imageID')]"
     },
@@ -321,7 +321,7 @@
     ],
     "startupParametersWorker": [
       "$Env:NodeType='worker'",
-      "[concat('$Env:USE_SPOT_INSTANCE=\"', parameters('UseSpotInstancesForWorkerNodes'), '\"')]"
+      "[concat('$Env:UseSpotInstance=\"', parameters('UseSpotInstancesForWorkerNodes'), '\"')]"
     ],
     "roleDeploymentCondition": "[or(not(equals(parameters('enableAutoscaling'), 'No')), not(equals(parameters('automaticallyTerminateCluster'), 'Disable auto-termination')))]",
     "vmssManagementPermissions": [
@@ -418,7 +418,7 @@
             "name": "default-allow-ssh",
             "properties": {
               "priority": 1000,
-              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddress'),' ', ''), ',')]",
+              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddressList'),' ', ''), ',')]",
               "protocol": "Tcp",
               "destinationPortRange": "22",
               "access": "Allow",
@@ -431,7 +431,7 @@
             "name": "default-allow-rdp",
             "properties": {
               "priority": 1010,
-              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddress'),' ', ''), ',')]",
+              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddressList'),' ', ''), ',')]",
               "protocol": "Tcp",
               "destinationPortRange": "3389",
               "access": "Allow",
@@ -444,7 +444,7 @@
             "name": "mathworks-job-scheduler-inbound",
             "properties": {
               "priority": 1020,
-              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddress'),' ', ''), ',')]",
+              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddressList'),' ', ''), ',')]",
               "protocol": "Tcp",
               "destinationPortRange": "[concat(variables('startPort'), '-', variables('finalPort'))]",
               "access": "Allow",

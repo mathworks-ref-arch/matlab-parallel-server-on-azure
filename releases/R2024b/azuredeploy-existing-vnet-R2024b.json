@@ -197,6 +197,13 @@
       "metadata": {
         "description": "Provide an optional inline PowerShell command to run on machine launch. For example, to set an environment variable CLOUD=AZURE, use this command excluding the angle brackets: &lt;[System.Environment]::SetEnvironmentVariable(\"CLOUD\",\"AZURE\", \"Machine\");&gt;. You can use either double quotes or two single quotes. To run an external script, use this command excluding the angle brackets: &lt;Invoke-WebRequest \"https://www.example.com/script.ps1\" -OutFile script.ps1; .\\script.ps1&gt;. Find the logs at 'C:\\ProgramData\\MathWorks\\startup.log'."
       }
+    },
+    "imageID": {
+      "type": "String",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Resource ID of a custom managed image in the target region. To use a prebuilt MathWorks image instead, leave this field empty. If you customize the build, for example by removing or modifying the included scripts, this can make the image incompatible with the provided ARM template. To ensure compatibility, modify the ARM template or image accordingly."
+      }
     }
   },
   "variables": {
@@ -221,12 +228,16 @@
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2024b-vm-win-sku",
     "version": "1.0.1",
-    "imageReference": {
+    "imageResourceID": {
+      "id": "[parameters('imageID')]"
+    },
+    "defaultImageReference": {
       "publisher": "[variables('publisher')]",
       "offer": "[variables('offer')]",
       "sku": "[variables('sku')]",
       "version": "[variables('version')]"
     },
+    "imageReference": "[if(empty(parameters('imageId')), variables('defaultImageReference'), variables('imageResourceID'))]",
     "plan": {
       "name": "[variables('sku')]",
       "publisher": "[variables('publisher')]",
@@ -481,7 +492,7 @@
         "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
       ],
       "tags": "[variables('tagsForAll')]",
-      "plan": "[variables('plan')]",
+      "plan": "[if(empty(parameters('imageId')), variables('plan') , null())]",
       "identity": {
         "type": "SystemAssigned"
       },
@@ -583,7 +594,7 @@
         "tier": "Standard",
         "capacity": "[parameters('numWorkerNodes')]"
       },
-      "plan": "[variables('plan')]",
+      "plan": "[if(empty(parameters('imageId')), variables('plan') , null())]",
       "properties": {
         "overprovision": false,
         "upgradepolicy": {
