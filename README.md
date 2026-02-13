@@ -19,6 +19,14 @@ You are responsible for the cost of the Azure services you use when you create c
 
 # Deployment Steps
 
+By default, the MATLAB Parallel Server reference architectures below launch prebuilt machine images, described in [Learn about Cluster Architecture](#learn-about-cluster-architecture).
+Using a prebuilt machine image is the easiest way to deploy a MATLAB Parallel Server reference architecture.
+Prebuilt images are provided for the five most recent MATLAB releases.
+Alternatively, to build your own machine image, see [Build and Deploy Your Own Machine Image](#build-and-deploy-your-own-machine-image).
+You can also use this workflow to install an earlier MATLAB release.
+
+## Deploy Prebuilt Machine Image
+
 To view instructions for deploying the MATLAB Parallel Server reference architecture, select a MATLAB release.
 
 | Linux | Windows |
@@ -38,6 +46,22 @@ To view instructions for deploying the MATLAB Parallel Server reference architec
 |  | [R2019b](releases/R2019b/README.md) |
 |  | [R2019a\_and\_older](releases/R2019a_and_older/README.md) |
 
+
+
+The above instructions allow you to launch instances based on the latest prebuilt MathWorks&reg; Azure Virtual Machine (VM) Images.
+
+## Build and Deploy Your Own Machine Image
+
+For details of the scripts which form the basis of the MathWorks Windows Machine Image build process, see [Build Your Own Machine Image](./packer/v1).
+You can use these scripts to build a custom Windows machine image for running MATLAB Parallel Server on Azure.
+You can then deploy this custom image with the MathWorks infrastructure as code (IaC) templates.
+
+You can customize the MATLAB release which is installed as part of this custom build.
+This includes MATLAB releases supported by the prebuilt images, as well as earlier MATLAB releases.
+For more details, see [Customize MATLAB Parallel Server Release to Install](./packer/v1#customize-matlab-parallel-server-release-to-install).
+
+Platform engineering teams can use these scripts to take advantage of optimizations MathWorks has developed for running MathWorks products in the cloud.
+For more details, see [What are the advantages of building images with MathWorks scripts?](#what-are-the-advantages-of-building-images-with-mathworks-scripts)
 
 # Learn About Cluster Architecture
 
@@ -124,11 +148,20 @@ Before enabling Spot Virtual Machines, consider these aspects:
 
 For more information about the limitations of using Spot Virtual Machines, see [Azure Spot Virtual Machines for Virtual Machine Scale Sets](https://learn.microsoft.com/azure/virtual-machine-scale-sets/use-spot).
 
+### What are the advantages of building images with MathWorks scripts?
+
+Images built with MathWorks scripts are optimized and tested for MathWorks workflows.
+The images are deployed by MathWorks Custom Deployment templates following Azure best practices.
+
+The warmup scripts found in [startup](./packer/v1/startup) allow you to start MATLAB faster. The Azure Resource Manager (ARM) template uses these scripts to automatically initialize MathWorks files on the instance. These scripts are automatically included in both the prebuilt images and the images that you build using the instructions in [Deployment Steps](#deployment-steps).
+
+Without the optimization scripts, starting a large software application, such as MATLAB, for the first time can take tens of minutes.
+
 # Technical Support
 If you need help or have a request for additional features or capabilities, contact [MathWorks Technical Support](https://www.mathworks.com/support/contact_us.html).
 
 ----
 
-Copyright 2018-2025 The MathWorks, Inc.
+Copyright 2018-2026 The MathWorks, Inc.
 
 ----
