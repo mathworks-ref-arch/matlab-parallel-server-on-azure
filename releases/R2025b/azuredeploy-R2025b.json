@@ -215,7 +215,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2025b-vm-win-sku",
-    "version": "20252.2.623060",
+    "version": "20252.4.720695",
     "imageResourceID": {
       "id": "[parameters('imageID')]"
     },
@@ -257,6 +257,7 @@
     "publicIPPostfix": "pub",
     "headnodeIPName": "[concat(variables('namingPrefix'), variables('publicIPPostfix'))]",
     "dnsLabelPrefix": "[concat('azure-', variables('resourceGroupUniqueString'))]",
+    "vmssDNSLabel": "[concat(variables('vmssName'), variables('dnsLabelPrefix'))]",
     "publicIpTimeout": "20",
     "networkInterfacePostfix": "nic",
     "publicIpConfigPostfix": "ipConfig",
@@ -267,12 +268,10 @@
     "storageAccountName": "[concat('mwstorage', variables('resourceGroupUniqueString'))]",
     "storageAccountType": "Standard_LRS",
     "userDataScript": [
-      "# Copyright 2023-2024 The MathWorks, Inc.",
+      "# Copyright 2023-2026 The MathWorks, Inc.",
       "",
       "Start-Transcript -Path $Env:ProgramData\\MathWorks\\startup.log -Append",
       "$StartupFolder = \"$Env:ProgramFiles\\MathWorks\\startup\"",
-      "# Load startup variables",
-      ". $StartupFolder\\env.ps1",
       "",
       "# Define startup parameters",
       "[concat('$Env:JobManagerName=\"', parameters('clusterName'), '\"')]",
@@ -283,6 +282,9 @@
       "[concat('$Env:AZURE_STORAGE_ACCOUNT=\"', variables('storageAccountName'), '\"')]",
       "{{NODE_SPECIFIC_PARAMETERS}}",
       "[concat('$Env:OptionalUserCommand=', '''', base64(parameters('optionalUserCommand')), '''')]",
+      "",
+      "# Load startup variables",
+      ". $StartupFolder\\env.ps1",
       "",
       "# Decode and execute the optional user command",
       "if ([string]::IsNullOrWhiteSpace(\"$Env:OptionalUserCommand\")) {",
@@ -308,6 +310,7 @@
     ],
     "startupParametersWorker": [
       "$Env:NodeType='worker'",
+      "[concat('$Env:DomainNameLabel=\"', variables('vmssDNSLabel'), '\"')]",
       "[concat('$Env:UseSpotInstance=\"', parameters('UseSpotInstancesForWorkerNodes'), '\"')]"
     ],
     "roleDeploymentCondition": "[or(not(equals(parameters('enableAutoscaling'), 'No')), not(equals(parameters('automaticallyTerminateCluster'), 'Disable auto-termination')))]",
@@ -645,7 +648,7 @@
                           },
                           "properties": {
                             "dnsSettings": {
-                              "domainNameLabel": "[concat(variables('vmssName'), variables('dnsLabelPrefix'))]"
+                              "domainNameLabel": "[variables('vmssDNSLabel')]"
                             },
                             "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
                           }
