@@ -144,10 +144,19 @@ class AbstractOSInterface(ABC):
         Returns:
             nodes_stopped (Set[str]): Hostname of nodes that were stoppped.
         """
+        if not nodes_hostnames:
+            return set()
+        
         hostnames = list(nodes_hostnames)
-        tasks = [self._stop_workers_on_node(host) for host in hostnames]
+        
+        async def _run():
+            # async function to be wrapped under asyncio.run(). asyncio.gather()
+            # needs a requires a running event loop to schedule the coroutines.
+            # Using this wrapper with run() ensures that the loop is created first
+            tasks = [self._stop_workers_on_node(host) for host in hostnames]
+            return await asyncio.gather(*tasks, return_exceptions=True)
 
-        results = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
+        results = asyncio.run(_run())
 
         # Make sure the workers actually stopped.
         current_hosts = self.get_worker_nodes()
@@ -157,6 +166,7 @@ class AbstractOSInterface(ABC):
             for host, status in zip(hostnames, results)
             if status and (host not in current_hosts)
         }
+
         return nodes_stopped
 
     def is_mjs_running(self) -> bool:
@@ -334,10 +344,20 @@ class AbstractOSInterface(ABC):
             workergroup_status (Dict[str, str]): Mapping between hostname
             and status.
         """
+        # Return early if no hostnames provided
+        if not nodes_hostnames:
+            return {}
+        
         hostnames = list(nodes_hostnames)
-        tasks = [self._get_workergroup_status(host) for host in hostnames]
 
-        results = asyncio.get_event_loop().run_until_complete(asyncio.gather(*tasks))
+        async def _run():
+            # async function to be wrapped under asyncio.run(). asyncio.gather()
+            # needs a requires a running event loop to schedule the coroutines.
+            # Using this wrapper with run() ensures that the loop is created first
+            tasks = [self._get_workergroup_status(host) for host in hostnames]
+            return await asyncio.gather(*tasks, return_exceptions=True)
+
+        results = asyncio.run(_run())
 
         statuses = {host: status for host, status in zip(hostnames, results)}
 

@@ -295,10 +295,6 @@
     "startPort": 27350,
     "finalPort": "[add(variables('startPort'), variables('totalPorts'))]",
     "storageAccountName": "[concat('mwstorage', variables('resourceGroupUniqueString'))]",
-    "storageAccountSku": {
-      "name": "Premium_LRS",
-      "tier": "Premium"
-    },
     "userDataScript": [
       "# Copyright 2023-2026 The MathWorks, Inc.",
       "",
@@ -419,37 +415,18 @@
       }
     },
     {
-      "type": "Microsoft.Storage/storageAccounts",
-      "apiVersion": "2025-06-01",
-      "name": "[variables('storageAccountName')]",
-      "location": "[resourceGroup().location]",
-      "tags": "[variables('tagsForAll')]",
-      "sku": "[variables('storageAccountSku')]",
-      "kind": "FileStorage",
-      "properties": {
-        "dnsEndpointType": "Standard",
-        "defaultToOAuthAuthentication": false,
-        "publicNetworkAccess": "Enabled",
-        "allowCrossTenantReplication": false,
-        "minimumTlsVersion": "TLS1_2",
-        "allowBlobPublicAccess": false,
-        "allowSharedKeyAccess": true,
-        "largeFileSharesState": "Enabled",
-        "networkAcls": {
-          "bypass": "AzureServices",
-          "defaultAction": "Allow"
-        },
-        "supportsHttpsTrafficOnly": false,
-        "encryption": {
-          "requireInfrastructureEncryption": false,
-          "services": {
-            "file": {
-              "keyType": "Account",
-              "enabled": true
-            }
-          },
-          "keySource": "Microsoft.Storage"
-        }
+    "type": "Microsoft.Storage/storageAccounts",
+    "apiVersion": "2025-06-01",
+    "name": "[variables('storageAccountName')]",
+    "location": "[resourceGroup().location]",
+    "sku": {
+        "name": "Standard_LRS"
+    },
+    "kind": "StorageV2",
+    "properties": {
+          "minimumTlsVersion": "TLS1_2",
+          "allowBlobPublicAccess": false,
+          "supportsHttpsTrafficOnly": true
       }
     },
     {

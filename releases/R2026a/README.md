@@ -6,7 +6,7 @@ Click the **Deploy to Azure** button below to deploy the cloud resources on Azur
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2026a%2Fazuredeploy-R2026a.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton"/></a>
 
-> Cluster Platform: Windows Server 2022
+> Cluster Platform: Windows Server 2025 (MATLAB R2026a), Windows Server 2022 (MATLAB R2025b and earlier)
 
 > MATLAB&reg; Release: R2026a
 
