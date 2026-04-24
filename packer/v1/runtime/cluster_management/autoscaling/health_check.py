@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright 2022-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface

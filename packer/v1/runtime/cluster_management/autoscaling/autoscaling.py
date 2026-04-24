@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# Copyright 2022-2024 The MathWorks, Inc.
+# Copyright 2022-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 from mwplatforminterfaces import OSInterface
@@ -28,13 +26,6 @@ def main(cloud_interface: CloudInterface, os_interface: OSInterface) -> int:
                         2: Faced an issue with cluster
                         3: Faced an issue with both
     """
-    # Retrieving capacity information
-    print("Connecting to the cloud computing platform")
-    cloud_interface = CloudInterface()
-
-    print("Connecting to cluster")
-    os_interface = OSInterface()
-
     print("# Starting capacity control")
     status_cc = capacity_control.main(cloud_interface, os_interface)
     print(f"# Finished capacity control: {status_cc}")

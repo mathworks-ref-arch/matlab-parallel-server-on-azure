@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# Copyright 2021-2024 The MathWorks, Inc.
+# Copyright 2021-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 from mwplatforminterfaces import OSInterface
