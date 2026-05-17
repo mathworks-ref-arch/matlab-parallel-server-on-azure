@@ -243,7 +243,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2026a-vm-win-sku",
-    "version": "20261.0.799138",
+    "version": "20261.0.837103",
     "imageResourceID": {
       "id": "[parameters('imageID')]"
     },
@@ -415,18 +415,18 @@
       }
     },
     {
-    "type": "Microsoft.Storage/storageAccounts",
-    "apiVersion": "2025-06-01",
-    "name": "[variables('storageAccountName')]",
-    "location": "[resourceGroup().location]",
-    "sku": {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2025-06-01",
+      "name": "[variables('storageAccountName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
         "name": "Standard_LRS"
-    },
-    "kind": "StorageV2",
-    "properties": {
-          "minimumTlsVersion": "TLS1_2",
-          "allowBlobPublicAccess": false,
-          "supportsHttpsTrafficOnly": true
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": false,
+        "supportsHttpsTrafficOnly": true
       }
     },
     {
