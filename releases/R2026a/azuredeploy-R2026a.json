@@ -109,12 +109,29 @@
         "description": "Address space for the new subnet, specified in CIDR notation (e.g., 10.0.0.0/24). Only used if Virtual Network Resource ID is left empty."
       }
     },
+    "createPublicIPAddress": {
+      "defaultValue": "Yes",
+      "type": "String",
+      "allowedValues": [
+        "Yes",
+        "No"
+      ],
+      "metadata": {
+        "description": "Choose whether to attach Public IPv4 addresses to the head-node and worker nodes. For details about using a private network configuration, see [Configure Private Network](#configure-private-network)."
+      }
+    },
     "clientIPAddressList": {
       "type": "string",
       "defaultValue": "",
-      "minLength": 7,
       "metadata": {
         "description": "Comma-separated list of IPv4 address ranges that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range. Example: 10.0.0.0/16,12.34.5.0/24 or 34.56.78.10/32. To build a specific range, you can use this tool: https://www.ipaddressguide.com/cidr. To determine which address is appropriate, contact your IT administrator."
+      }
+    },
+    "customDNSSearchSuffix": {
+      "defaultValue": "",
+      "type": "String",
+      "metadata": {
+        "description": "(Optional) If deploying in an existing virtual network with a custom DNS setup, enter the DNS search suffix to use, for example corp.mycompany.internal. This enables headnode and workers to identify themselves using full DNS names of the form: <computer_name>.corp.mycompany.internal. Ensure that the cluster nodes are auto-registered with the DNS service to allow name resolution. If left empty, head node and worker nodes will use their Private IPv4 addresses for communication."
       }
     },
     "adminUsername": {
@@ -226,6 +243,7 @@
     "fixedPrefix": "mjs",
     "windowsVMNameLengthLimit": 15,
     "windowsVMSSNameLengthLimit": 9,
+    "allowDefaultInternetAccess": true,
     "resourceGroupUniqueString": "[uniqueString(resourceGroup().id)]",
     "namingPrefix": "[concat(variables('fixedPrefix'), '-', variables('resourceGroupUniqueString'))]",
     "addressPrefix": "[parameters('newVnetAddressSpace')]",
@@ -243,7 +261,7 @@
     "publisher": "mathworks-inc",
     "offer": "matlab-parallel-server-ref-arch-vm-win-offer",
     "sku": "matlab-parallel-server-ref-arch-r2026a-vm-win-sku",
-    "version": "20261.0.837103",
+    "version": "20261.3.880449",
     "imageResourceID": {
       "id": "[parameters('imageID')]"
     },
@@ -307,12 +325,15 @@
       "[concat('$Env:MLMLicenseFile=\"', parameters('licenseServer'), '\"')]",
       "[concat('$Env:SecurityLevel=\"', parameters('MJSSecurityLevel'), '\"')]",
       "[concat('$Env:SchedulingAlgorithm=\"', parameters('MJSSchedulingAlgorithm'), '\"')]",
+      "[concat('$Env:CustomDNSSuffix=\"', variables('customDNSSuffix'), '\"')]",
+      "[concat('$Env:EnablePublicIP=\"', parameters('createPublicIPAddress'), '\"')]",
       "[concat('$Env:AZURE_STORAGE_ACCOUNT=\"', variables('storageAccountName'), '\"')]",
       "{{NODE_SPECIFIC_PARAMETERS}}",
       "[concat('$Env:OptionalUserCommand=', '''', base64(parameters('optionalUserCommand')), '''')]",
       "",
       "# Load startup variables",
       ". $StartupFolder\\env.ps1",
+      ". $StartupFolder\\Setup-MJSHostname.ps1",
       "",
       "# Decode and execute the optional user command",
       "if ([string]::IsNullOrWhiteSpace(\"$Env:OptionalUserCommand\")) {",
@@ -348,6 +369,9 @@
       "[concat('$Env:UseSpotInstance=\"', parameters('UseSpotInstancesForWorkerNodes'), '\"')]"
     ],
     "roleDeploymentCondition": "[or(not(equals(parameters('enableAutoscaling'), 'No')), not(equals(parameters('automaticallyTerminateCluster'), 'Disable auto-termination')))]",
+    "vmssNicReadPermission": [
+      "Microsoft.Compute/virtualMachineScaleSets/networkInterfaces/read"
+    ],
     "vmssManagementPermissions": [
       "Microsoft.Compute/virtualMachineScaleSets/read",
       "Microsoft.Compute/virtualMachineScaleSets/write",
@@ -361,6 +385,7 @@
       "Microsoft.Compute/virtualMachines/read",
       "Microsoft.Compute/virtualMachines/deallocate/action"
     ],
+    "clusterManagementPermissions": "[if(and(not(variables('enablePublicIP')), not(variables('customDNSEnabled'))), concat(variables('vmssManagementPermissions'), variables('vmssNicReadPermission')), variables('vmssManagementPermissions'))]",
     "clusterManagerRoleName": "[guid(resourceGroup().id, 'cluster-management-role')]",
     "tagsForAll": {
       "provider": "[variables('cuaTrackingNum')]"
@@ -371,7 +396,95 @@
       "mwMaxCount": "[parameters('maxWorkerNodes')]",
       "mwWorkersPerNode": "[parameters('numWorkersPerNode')]",
       "mwWorkerIdleTimeoutMinutes": 10
-    }
+    },
+    "enablePublicIP": "[equals(parameters('createPublicIPAddress'), 'Yes')]",
+    "customDNSSuffix": "[trim(parameters('customDNSSearchSuffix'))]",
+    "customDNSEnabled": "[not(empty(variables('customDNSSuffix')))]",
+    "customHeadNodeName": "[concat(variables('headnodeMachineName'), '.', variables('customDNSSuffix'))]",
+    "nicIpConfigurationWithPublicIp": [
+      {
+        "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
+        "properties": {
+          "subnet": {
+            "id": "[variables('subnet')]"
+          },
+          "privateIPAllocationMethod": "Dynamic",
+          "publicIpAddress": {
+            "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('headnodeIPName'))]"
+          }
+        }
+      }
+    ],
+    "nicIpConfigurationWithoutPublicIp": [
+      {
+        "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
+        "properties": {
+          "subnet": {
+            "id": "[variables('subnet')]"
+          },
+          "privateIPAllocationMethod": "Dynamic"
+        }
+      }
+    ],
+    "clientIPs": "[replace(parameters('clientIPAddressList'), ' ', '')]",
+    "clientIPsProvided": "[not(empty(variables('clientIPs')))]",
+    "allowClientIPSecurityRules": [
+      {
+        "name": "default-allow-ssh",
+        "properties": {
+          "priority": 1000,
+          "sourceAddressPrefixes": "[split(variables('clientIPs'), ',')]",
+          "protocol": "Tcp",
+          "destinationPortRange": "22",
+          "access": "Allow",
+          "direction": "Inbound",
+          "sourcePortRange": "*",
+          "destinationAddressPrefix": "*"
+        }
+      },
+      {
+        "name": "default-allow-rdp",
+        "properties": {
+          "priority": 1010,
+          "sourceAddressPrefixes": "[split(variables('clientIPs'), ',')]",
+          "protocol": "Tcp",
+          "destinationPortRange": "3389",
+          "access": "Allow",
+          "direction": "Inbound",
+          "sourcePortRange": "*",
+          "destinationAddressPrefix": "*"
+        }
+      },
+      {
+        "name": "mathworks-job-scheduler-inbound",
+        "properties": {
+          "priority": 1020,
+          "sourceAddressPrefixes": "[split(variables('clientIPs'), ',')]",
+          "protocol": "Tcp",
+          "destinationPortRange": "[concat(variables('startPort'), '-', variables('finalPort'))]",
+          "access": "Allow",
+          "direction": "Inbound",
+          "sourcePortRange": "*",
+          "destinationAddressPrefix": "*"
+        }
+      }
+    ],
+    "allowInternalSecurityRule": [
+      {
+        "name": "allow-internal-traffic",
+        "properties": {
+          "priority": 1030,
+          "sourceAddressPrefix": "VirtualNetwork",
+          "protocol": "Tcp",
+          "destinationPortRange": "*",
+          "access": "Allow",
+          "direction": "Inbound",
+          "sourcePortRange": "*",
+          "destinationAddressPrefix": "VirtualNetwork"
+        }
+      }
+    ],
+    "networkSecurityGroupRules": "[if(variables('clientIPsProvided'), concat(variables('allowClientIPSecurityRules'), variables('allowInternalSecurityRule')), variables('allowInternalSecurityRule'))]"
   },
   "resources": [
     {
@@ -391,7 +504,8 @@
           {
             "name": "[variables('subnetCreateName')]",
             "properties": {
-              "addressPrefix": "[variables('subnetPrefix')]"
+              "addressPrefix": "[variables('subnetPrefix')]",
+              "defaultOutboundAccess": "[variables('allowDefaultInternetAccess')]"
             }
           }
         ]
@@ -399,6 +513,7 @@
     },
     {
       "type": "Microsoft.Network/publicIPAddresses",
+      "condition": "[variables('enablePublicIP')]",
       "sku": {
         "name": "Standard"
       },
@@ -439,60 +554,7 @@
       ],
       "tags": "[variables('tagsForAll')]",
       "properties": {
-        "securityRules": [
-          {
-            "name": "default-allow-ssh",
-            "properties": {
-              "priority": 1000,
-              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddressList'),' ', ''), ',')]",
-              "protocol": "Tcp",
-              "destinationPortRange": "22",
-              "access": "Allow",
-              "direction": "Inbound",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "*"
-            }
-          },
-          {
-            "name": "default-allow-rdp",
-            "properties": {
-              "priority": 1010,
-              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddressList'),' ', ''), ',')]",
-              "protocol": "Tcp",
-              "destinationPortRange": "3389",
-              "access": "Allow",
-              "direction": "Inbound",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "*"
-            }
-          },
-          {
-            "name": "mathworks-job-scheduler-inbound",
-            "properties": {
-              "priority": 1020,
-              "sourceAddressPrefixes": "[split(replace(parameters('clientIPAddressList'),' ', ''), ',')]",
-              "protocol": "Tcp",
-              "destinationPortRange": "[concat(variables('startPort'), '-', variables('finalPort'))]",
-              "access": "Allow",
-              "direction": "Inbound",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "*"
-            }
-          },
-          {
-            "name": "allow-internal-traffic",
-            "properties": {
-              "priority": 1030,
-              "sourceAddressPrefix": "VirtualNetwork",
-              "protocol": "Tcp",
-              "destinationPortRange": "*",
-              "access": "Allow",
-              "direction": "Inbound",
-              "sourcePortRange": "*",
-              "destinationAddressPrefix": "VirtualNetwork"
-            }
-          }
-        ]
+        "securityRules": "[variables('networkSecurityGroupRules')]"
       }
     },
     {
@@ -506,20 +568,7 @@
       ],
       "tags": "[variables('tagsForAll')]",
       "properties": {
-        "ipConfigurations": [
-          {
-            "name": "[concat(variables('headnodeMachineName'), variables('publicIpConfigPostfix'))]",
-            "properties": {
-              "subnet": {
-                "id": "[variables('subnet')]"
-              },
-              "privateIPAllocationMethod": "Dynamic",
-              "publicIpAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIpAddresses', variables('headnodeIPName'))]"
-              }
-            }
-          }
-        ],
+        "ipConfigurations": "[if(variables('enablePublicIp'), variables('nicIpConfigurationWithPublicIp'), variables('nicIpConfigurationWithoutPublicIp'))]",
         "networkSecurityGroup": {
           "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]"
         }
@@ -559,12 +608,12 @@
             }
           ]
         },
-        "userData": "[base64(replace(join(variables('userDataScript'), '\n'), '{{NODE_SPECIFIC_PARAMETERS}}', concat(join(variables('startupParametersHeadnode'), '\n'), '\n$Env:AZURE_STORAGE_KEY=\"', listKeys(variables('storageAccountName'), '2022-09-01').keys[0].value, '\"', '\n$Env:HeadnodeHostname=\"', reference(variables('headnodeIPName')).dnsSettings.fqdn, '\"')))]"
+        "userData": "[base64(replace(join(variables('userDataScript'), '\n'), '{{NODE_SPECIFIC_PARAMETERS}}', concat(join(variables('startupParametersHeadnode'), '\n'), '\n$Env:AZURE_STORAGE_KEY=\"', listKeys(variables('storageAccountName'), '2025-06-01').keys[0].value, '\"', '\n$Env:HeadnodeHostname=\"', if(variables('enablePublicIP'), reference(variables('headnodeIPName')).dnsSettings.fqdn, if(variables('customDNSEnabled'), variables('customHeadNodeName'), reference(variables('networkInterfaceName')).ipConfigurations[0].properties.privateIPAddress)), '\"')))]"
       },
       "resources": [
         {
           "type": "extensions",
-          "apiVersion": "2023-03-01",
+          "apiVersion": "2025-04-01",
           "name": "startup",
           "location": "[resourceGroup().location]",
           "dependsOn": [
@@ -598,7 +647,7 @@
         "description": "Grants access to manage VMSS and VMs.",
         "permissions": [
           {
-            "actions": "[union(variables('headnodeManagementPermissions'), variables('vmssManagementPermissions'))]"
+            "actions": "[union(variables('headnodeManagementPermissions'), variables('clusterManagementPermissions'))]"
           }
         ],
         "roleName": "[concat('Cluster Orchestrator - ', resourceGroup().name)]",
@@ -617,7 +666,7 @@
       "tags": "[variables('tagsForAll')]",
       "properties": {
         "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions/', variables('clusterManagerRoleName'))]",
-        "principalId": "[reference(resourceId('Microsoft.Compute/virtualMachines/', variables('headnodeMachineName')), '2022-03-01', 'Full').identity.principalId]",
+        "principalId": "[reference(resourceId('Microsoft.Compute/virtualMachines/', variables('headnodeMachineName')), '2025-04-01', 'Full').identity.principalId]",
         "principalType": "ServicePrincipal"
       }
     },
@@ -677,18 +726,7 @@
                         "subnet": {
                           "id": "[variables('subnet')]"
                         },
-                        "publicIpAddressConfiguration": {
-                          "name": "[variables('publicIpPostfix')]",
-                          "sku": {
-                            "name": "Standard"
-                          },
-                          "properties": {
-                            "dnsSettings": {
-                              "domainNameLabel": "[variables('vmssDNSLabel')]"
-                            },
-                            "idleTimeoutInMinutes": "[variables('publicIpTimeout')]"
-                          }
-                        }
+                        "publicIpAddressConfiguration": "[if(variables('enablePublicIP'), createObject('name', variables('publicIpPostfix'), 'sku', createObject('name', 'Standard'), 'properties', createObject('dnsSettings', createObject('domainNameLabel', variables('vmssDNSLabel')), 'idleTimeoutInMinutes', variables('publicIpTimeout'))), json('null'))]"
                       }
                     }
                   ],
@@ -699,7 +737,7 @@
               }
             ]
           },
-          "userData": "[base64(replace(join(variables('userDataScript'), '\n'), '{{NODE_SPECIFIC_PARAMETERS}}', concat(join(variables('startupParametersWorker'), '\n'), '\n$Env:AZURE_STORAGE_KEY=\"', listKeys(variables('storageAccountName'), '2022-09-01').keys[0].value, '\"', '\n$Env:HeadnodeHostname=\"', reference(variables('headnodeIPName')).dnsSettings.fqdn, '\"', '\n$Env:HeadnodeLocalIP=\"', reference(variables('networkInterfaceName')).ipConfigurations[0].properties.privateIPAddress, '\"')))]",
+          "userData": "[base64(replace(join(variables('userDataScript'), '\n'), '{{NODE_SPECIFIC_PARAMETERS}}', concat(join(variables('startupParametersWorker'), '\n'), '\n$Env:AZURE_STORAGE_KEY=\"', listKeys(variables('storageAccountName'), '2025-06-01').keys[0].value, '\"', '\n$Env:HeadnodeHostname=\"', if(variables('enablePublicIP'), reference(variables('headnodeIPName')).dnsSettings.fqdn, if(variables('customDNSEnabled'), variables('customHeadNodeName'), reference(variables('networkInterfaceName')).ipConfigurations[0].properties.privateIPAddress)), '\"', '\n$Env:HeadnodeLocalIP=\"', reference(variables('networkInterfaceName')).ipConfigurations[0].properties.privateIPAddress, '\"')))]",
           "extensionProfile": {
             "extensions": [
               {

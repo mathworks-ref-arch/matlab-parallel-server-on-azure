@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 from mwplatforminterfaces import OSInterface
@@ -23,6 +21,8 @@ from constants import (
     CLUSTER_MANAGEMENT_LOG_FILE,
     MAX_LOG_FILE_SIZE,
     MAX_LOG_BACKUP_FILES,
+    CUSTOM_DNS_SUFFIX,
+    USE_PRIVATE_IP_MAPPING,
 )
 
 
@@ -55,18 +55,35 @@ def main() -> int:
     termination_routine_status = STATUS_SUCCESS
     cluster_termination_status = STATUS_SUCCESS
 
-    print("Connecting to the cloud computing platform...")
-    cloud_interface = CloudInterface()
-
-    print("Connecting to cluster...")
-    os_interface = OSInterface()
-
     print("Reading the cluster management program data file...")
     cluster_management_interface = ClusterManagementProgramInterface()
 
     if not cluster_management_interface.class_init_success:
         print("Cluster management data file is empty. Read failed.")
         return STATUS_INTERNAL_READ_WRITE_ISSUE
+    
+    # The custom_dns_suffix variable contains the custom DNS search 
+    # suffix used to identify worker nodes
+    custom_dns_suffix = cluster_management_interface.cluster_management_config[
+        CUSTOM_DNS_SUFFIX
+    ]
+
+    # The use_private_ip_mapping boolean variable determines whether 
+    # private IP addresses should be used
+    # to identify worker nodes, instead of hostnames
+    use_private_ip_mapping = cluster_management_interface.cluster_management_config[
+        USE_PRIVATE_IP_MAPPING
+    ]
+
+    print("Connecting to the cloud computing platform...")
+    cloud_interface = CloudInterface(
+        custom_dns_suffix=custom_dns_suffix,
+        use_private_ip_mapping=use_private_ip_mapping,
+    )
+
+    print("Connecting to cluster...")
+    os_interface = OSInterface()
+
 
     # Start autoscaling if it is enabled
     if (

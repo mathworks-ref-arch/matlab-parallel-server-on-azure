@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 
@@ -47,25 +47,22 @@ def main(
                         2: Faced an issue with cluster
                         3: Faced an issue with both
     """
-    mjs_status_log_path = cluster_management_interface.cluster_management_config[
-        MJS_STATUS_LOG_FILE
-    ]
     # If MJS was never busy, then we set the idle timeout to at least UNUSED_CLUSTER_TIMEOUT_SECONDS
     # This is done to ensure that the user gets enough time to submit their first job before termination begins.
     idle_timeout_seconds = cloud_interface.get_idle_timeout_seconds()
     if not cluster_management_interface.cluster_management_state[WAS_MJS_BUSY]:
         idle_timeout_seconds = max(idle_timeout_seconds, UNUSED_CLUSTER_TIMEOUT_SECONDS)
 
-    if not os.path.isfile(mjs_status_log_path):
+    if not os.path.isfile(MJS_STATUS_LOG_FILE):
         print(
-            f"~ Failed to find file {mjs_status_log_path}. {MJS_STATE_UNKNOWN_PROMPT}."
+            f"~ Failed to find file {MJS_STATUS_LOG_FILE}. {MJS_STATE_UNKNOWN_PROMPT}."
         )
         return STATUS_CLUSTER_ISSUE
 
     # Proceed only if the mjs status transitions log file contains at least one non-empty line
-    last_line = read_last_non_empty_line(mjs_status_log_path)
+    last_line = read_last_non_empty_line(MJS_STATUS_LOG_FILE)
     if not last_line:
-        print(f"~ {mjs_status_log_path} file is empty. {MJS_STATE_UNKNOWN_PROMPT}.")
+        print(f"~ {MJS_STATUS_LOG_FILE} file is empty. {MJS_STATE_UNKNOWN_PROMPT}.")
         return STATUS_CLUSTER_ISSUE
 
     idle_timestamp = extract_idle_timestamp(last_line)

@@ -6,6 +6,7 @@ from mwplatforminterfaces import OSInterface
 from constants import (
     STATUS_SUCCESS,
     STATUS_CLOUD_ISSUE,
+    HEALTH_CHECK_GRACE_PERIOD_SECONDS,
 )
 
 
@@ -32,21 +33,27 @@ def main(cloud_interface: CloudInterface, os_interface: OSInterface) -> int:
                         1: Faced an issue with cloud provider
     """
     # The idle timeout for workers is defined by the mwWorkerIdleTimeoutMinutes
-    # tag defined in the cluster auto-scaling group resource
+    # tag defined in the cluster VMSS resource
     idle_timeout_seconds = cloud_interface.get_idle_timeout_seconds()
     print(f"Idle timeout is {idle_timeout_seconds}s")
 
+    # We must wait for at least HEALTH_CHECK_GRACE_PERIOD_SECONDS before evaluate
+    # health of the worker nodes
+    health_check_grace_period = max(HEALTH_CHECK_GRACE_PERIOD_SECONDS, idle_timeout_seconds)
+    print(f"Health check grace period is {health_check_grace_period}s")
+
     # Retrieve current nodes in the cluster that are running for
-    # at least idle_timeout_seconds
+    # at least health_check_grace_period
     current_nodes = cloud_interface.get_worker_nodes(
-        grace_period_seconds = idle_timeout_seconds
+        grace_period_seconds = health_check_grace_period
     )
 
     if not current_nodes:
-        print(f"There are no worker nodes running for more than {idle_timeout_seconds} seconds.")
+        print(f"There are no worker nodes running for more than {health_check_grace_period} seconds.")
+        print("No worker nodes to evaluate for health checks.")
         return STATUS_SUCCESS
 
-    print(f"{len(current_nodes)} nodes running for more than {idle_timeout_seconds} seconds: {current_nodes}")
+    print(f"{len(current_nodes)} nodes running for more than {health_check_grace_period} seconds: {current_nodes}")
 
     # Worker nodes where MATLAB workers have been suspended or stopped
     suspended_nodes = os_interface.get_suspended_nodes(current_nodes)

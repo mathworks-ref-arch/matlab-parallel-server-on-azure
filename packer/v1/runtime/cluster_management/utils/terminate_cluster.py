@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 from mwplatforminterfaces import OSInterface
@@ -44,9 +44,6 @@ def main(
     # Initialize status variables
     cluster_issue, cloud_issue = False, False
 
-    mjs_status_log_file = cluster_management_interface.cluster_management_config[
-        MJS_STATUS_LOG_FILE
-    ]
     initial_termination_policy = (
         cluster_management_interface.cluster_management_config[
             INITIAL_TERMINATION_POLICY
@@ -75,6 +72,7 @@ def main(
             print("> Successfully deleted all nodes in the VMSS.")
             print("> Stopping MATLAB Job Scheduler service...")
             jobmanager_stopped = os_interface.stop_job_manager()
+            mjs_stopped = False
             if jobmanager_stopped:
                 mjs_stopped = os_interface.stop_mjs()
             if not mjs_stopped or not jobmanager_stopped:
@@ -90,9 +88,9 @@ def main(
                     initial_termination_policy
                 )
                 if policy_reset:
-                    if os.path.exists(mjs_status_log_file):
-                        os.remove(mjs_status_log_file)
-                        print(f"> Deleting {mjs_status_log_file} file...")
+                    if os.path.exists(MJS_STATUS_LOG_FILE):
+                        os.remove(MJS_STATUS_LOG_FILE)
+                        print(f"> Deleting {MJS_STATUS_LOG_FILE} file...")
 
                     # Update the last termination policy in the cluster management data file as it might become stale
                     # by the time the headnode is restarted in case the policy is a time-stamp

@@ -9,7 +9,6 @@ $Env:MATLABRelease = ([xml](Get-Content "$Env:MATLABRoot\VersionInfo.xml")).Math
 $Env:ParallelToolBoxRoot = "$Env:MATLABRoot\toolbox\parallel\bin"
 $Env:MJSDefFile = "$Env:ParallelToolBoxRoot\mjs_def.bat"
 
-$Env:MJSStatusLogFile = "$Env:ProgramData\MathWorks\mjs_status_transitions.log"
 $Env:ClusterManagementDataFile = "$Env:ProgramFiles\MathWorks\cluster_management\data\cluster_management_data.json"
 $Env:MJSBusyIdleScripts = "C:\mjs_status_scripts"
 
@@ -35,23 +34,3 @@ $Env:ResourceID = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -U
 $Env:LocalIPv4 = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -Uri "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/privateIpAddress?api-version=2021-02-01&format=text"
 $Env:LocalHostname = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -Uri "http://169.254.169.254/metadata/instance/compute/osProfile/computerName?api-version=2021-02-01&format=text"
 $Env:PublicIPv4 = (Invoke-RestMethod -Headers @{Metadata="true"} -Uri "http://169.254.169.254/metadata/loadbalancer?api-version=2020-10-01").loadbalancer.publicIpAddresses[0].frontendIpAddress
-
-If (-not $Env:PublicIPv4) {
-    Write-Output 'This reference architecture requires public IP addresses.'
-    Exit 1
-}
-
-# Determine the public FQDN for workers and headnode
-# DomainNameLabel used for the workers is set in the ARM template
-If ("$Env:NodeType" -eq 'worker') {
-    # Resource IDs for VMSS instances are of the form:
-    # /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/<RESOURCE_GROUP>/providers/Microsoft.Compute/virtualMachineScaleSets/<VMSS_NAME>/virtualMachines/<INSTANCE_ID>
-    $InstanceID = $Env:ResourceID.Split('/')[-1]
-    $Location = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -Uri "http://169.254.169.254/metadata/instance/compute/location?api-version=2021-02-01&format=text"
-
-    # FQDNs for Public IPv4 addresses follow this format
-    # Source: https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses#domain-name-label
-    $Env:ExternalHostName = "vm${InstanceID}.${Env:DomainNameLabel}.${Location}.cloudapp.azure.com"
-} else {
-    $Env:ExternalHostName = $Env:HeadnodeHostname
-}

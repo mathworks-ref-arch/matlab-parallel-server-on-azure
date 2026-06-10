@@ -83,6 +83,7 @@ variable "STARTUP_SCRIPTS" {
   type = list(string)
   default = [
     "env.ps1",
+    "00_Set-CustomDNSSuffix.ps1",
     "10_Setup-Disk.ps1",
     "20_Setup-MATLAB.ps1",
     "30_Setup-Polyspace.ps1",
@@ -91,7 +92,8 @@ variable "STARTUP_SCRIPTS" {
     "60_Setup-MJS.ps1",
     "70_Start-MJS.ps1",
     "80_Initialize-ClusterManagementProgram.ps1",
-    "90_Add-SpotInstanceMonitoring.ps1"
+    "90_Add-SpotInstanceMonitoring.ps1",
+    "Setup-MJSHostname.ps1"
   ]
   description = "The list of startup scripts Packer will copy to the remote machine image builder, which can be used during resource group creation."
 }

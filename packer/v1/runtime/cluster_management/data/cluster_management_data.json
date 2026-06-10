@@ -5,7 +5,8 @@
         "autotermination_enabled": false,
         "initial_termination_policy": "",
         "initial_desired_capacity": "",
-        "mjs_status_log_file": "C:/ProgramData/MathWorks/mjs_status_transitions.log"
+        "custom_dns_suffix": "",
+        "use_private_ip_mapping": false
     },
     "state":{
         "was_mjs_busy": false,

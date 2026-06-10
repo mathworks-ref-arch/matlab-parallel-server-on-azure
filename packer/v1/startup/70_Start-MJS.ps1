@@ -3,22 +3,37 @@
     Starts and configures the MATLAB Job Scheduler (MJS) and related services for MATLAB Parallel Server deployment on Azure.
 
 .DESCRIPTION
-    This script sets up networking, configures environment variables, manages firewall rules, updates the hosts file for headnode and worker nodes, and starts the MATLAB Job Scheduler (MJS) and associated services. It handles the installation, uninstallation, and startup of MJS, as well as the job manager and worker nodes, depending on the node type. The script also manages the file extensions of busy and idle scripts required by MJS, ensuring compatibility with different MATLAB releases.
+    Configures networking, firewall rules, and the hosts file, then installs and starts the
+    MATLAB Job Scheduler (MJS) and associated services for MATLAB Parallel Server on Azure.
+    On the headnode, this starts the job manager; on worker nodes, it starts the workers.
+    Also manages busy/idle script file extensions required by MJS for MATLAB releases prior to R2024b.
 
-.PARAMETER HeadnodeHostname
-    The hostname of the headnode. Defaults to the value of $Env:HeadnodeHostname.
+.PARAMETER InternalHostname
+    The internal hostname (computer name) of the current node. Defaults to $Env:InternalHostname.
+
+.PARAMETER ExternalHostname
+    The external hostname (will be visible to MATLAB clients) of the current node. Defaults to $Env:ExternalHostname.
 
 .PARAMETER NodeType
-    The type of node ('headnode' or worker node). Determines the configuration and services to start.
+    The type of node ('headnode' or 'worker'). Determines which services are started. Defaults to $Env:NodeType.
 
-.NOTES
-    - Requires environment variables to be set for various paths and configuration values.
-    - Assumes that the Parallel Toolbox and MATLAB are installed and available at specified locations.
-    - For MATLAB releases prior to R2024b, busy and idle scripts must not have file extensions when starting MJS.
-    - After starting the job manager, busy and idle scripts must have the '.bat' extension for execution.
+.ENVIRONMENT
+    This script requires the following environment variables to be set before execution. These variables are
+    either set in the user-data or in previous startup scripts.
+
+    LocalIPv4            - Local IPv4 address of the current node.
+    HeadnodeHostname     - External hostname of the headnode (used by workers to identify the headnode).
+    HeadnodeLocalIP      - Local IP of the headnode (used by workers to resolve headnode hostname).
+    MJSBusyIdleScripts   - Path to the directory containing busy and idle scripts.
+    ParallelToolBoxRoot  - Path to the Parallel Toolbox installation directory.
+    JobManagerName       - Name of the MJS job manager.
+    MATLABRelease        - MATLAB release version (e.g. 'R2024a'), used to handle busy/idle script extensions.
+    MJSAdminPasswordFile - Path to the file containing the MJS administrator password (Security Level 2 and 3).
+    CertFile             - Path to the certificate file used by the job manager.
+    WorkersPerNode       - Number of workers to start on each worker node.
 
 .EXAMPLE
-    Start-MJS -HeadnodeHostname "hostname" -NodeType "headnode"
+    Start-MJS -NodeType "headnode" -ExternalHostname "myheadnode" -InternalHostname "myheadnode-internal"
 
 .NOTES
     Copyright 2022-2026 The MathWorks, Inc.
@@ -54,10 +69,10 @@ function Convert-BusyIdleScriptExtensions {
 function Start-MJS {
     param(
         [Parameter(Mandatory = $false)]
-        [string]$HeadnodeHostname = $Env:HeadnodeHostname,
+        [string]$InternalHostname = $Env:InternalHostname,
 
         [Parameter(Mandatory = $false)]
-        [string]$LocalHostname = $Env:LocalHostname,
+        [string]$ExternalHostname = $Env:ExternalHostname,
 
         [Parameter(Mandatory = $false)]
         [string]$NodeType
@@ -74,18 +89,25 @@ function Start-MJS {
 
     # Ensure that all communication with the headnode occurs on the local network.
     if ($NodeType -eq 'headnode') {
-        Add-Content "$Env:Windir\System32\drivers\etc\hosts" "$Env:LocalIPv4`t$HeadnodeHostname"
+        Add-Content "$Env:Windir\System32\drivers\etc\hosts" "$Env:LocalIPv4`t$ExternalHostname"
+        $MJSHostname = "$ExternalHostname"
     }
     else {
-        Add-Content "$Env:Windir\System32\drivers\etc\hosts" "$Env:HeadnodeLocalIP`t$HeadnodeHostname"
+        $HeadnodeExternalHostname = "$Env:HeadnodeHostname"
+        Add-Content "$Env:Windir\System32\drivers\etc\hosts" "$Env:HeadnodeLocalIP`t$HeadnodeExternalHostname"
+        $MJSHostname = "$InternalHostname"
     }
 
     # Ensure that the MATLAB client can connect directly to the workers.
     # This is a necessary condition to create parpools.
-    [Environment]::SetEnvironmentVariable('MDCE_OVERRIDE_EXTERNAL_HOSTNAME', $Env:ExternalHostName, 'Machine')
-    [Environment]::SetEnvironmentVariable('MDCE_OVERRIDE_INTERNAL_HOSTNAME', $Env:LocalHostname, 'Machine')
+    [Environment]::SetEnvironmentVariable('MDCE_OVERRIDE_EXTERNAL_HOSTNAME', $ExternalHostName, 'Machine')
+    [Environment]::SetEnvironmentVariable('MDCE_OVERRIDE_INTERNAL_HOSTNAME', $InternalHostName, 'Machine')
+
+    # Set MPICH_INTERFACE_HOSTNAME to internal hostname for worker-worker communication
+    [Environment]::SetEnvironmentVariable('MPICH_INTERFACE_HOSTNAME', $InternalHostName, 'Machine')
 
     $MJSOpts = @(
+        '-hostname', "$MJSHostname",
         '-enablepeerlookup',
         '-cleanPreserveJobs',
         '-sendactivitynotifications',
@@ -153,12 +175,12 @@ function Start-MJS {
     }
     else {
         Write-Output '===Starting workers==='
-        & "$Env:ParallelToolBoxRoot\startworker.bat" -jobmanagerhost $HeadnodeHostname -jobmanager "$Env:JobManagerName" -num $Env:WorkersPerNode
+        & "$Env:ParallelToolBoxRoot\startworker.bat" -jobmanagerhost $HeadnodeExternalHostname -jobmanager "$Env:JobManagerName" -num $Env:WorkersPerNode
     }
 }
 
 try {
-    Start-MJS -HeadnodeHostname $Env:HeadnodeHostname -NodeType $Env:NodeType -LocalHostname $Env:LocalHostname
+    Start-MJS -NodeType $Env:NodeType -ExternalHostname $Env:ExternalHostname -InternalHostname $Env:InternalHostname
 }
 catch {
     $ScriptPath = $MyInvocation.MyCommand.Path

@@ -8,7 +8,7 @@
     A scheduled task is created to run the user-data in the head-node on every boot. Running the userdata starts and configures MJS.
 
 .NOTES
-    Copyright 2024-2025 The MathWorks, Inc.
+    Copyright 2024-2026 The MathWorks, Inc.
 #>
 
 function Register-ScheduledTaskIfNotAvailable {
@@ -43,7 +43,8 @@ function Initialize-ClusterManagementProgram {
         [string]$TerminationPolicy,
         [string]$ClusterManagementDataFile,
         [string]$DesiredCapacity,
-        [string]$MJSStatusLogFile
+        [string]$CustomDNSSuffix,
+        [string]$EnablePublicIP
     )
 
     Write-Output 'Initializing the cluster management program data file...'
@@ -56,14 +57,18 @@ function Initialize-ClusterManagementProgram {
         $TerminationPolicy = 'never'
     }
 
+    # This boolean flag tells the cluster management program to use private IPs of the workers instead of hostnames
+    $UsePrivateIPMapping = ([string]::IsNullOrEmpty($CustomDNSSuffix) -and $EnablePublicIP -eq 'No')
+
     # Read the cluster management data file into a PowerShell object
     $ClusterManagementProgramData = Get-Content -Path $ClusterManagementDataFile -Raw | ConvertFrom-Json
 
     $ConfigValues = @{
         'initial_desired_capacity'   = $DesiredCapacity
         'initial_termination_policy' = $TerminationPolicy
-        'mjs_status_log_file'        = $MJSStatusLogFile
         'autotermination_enabled'    = $AutoTerminationFlag
+        'custom_dns_suffix'          = $CustomDNSSuffix
+        'use_private_ip_mapping'     = $UsePrivateIPMapping
     }
 
     # Update the config properties
@@ -99,7 +104,7 @@ function Set-UserdataTask {
 
 try {
     if ($Env:NodeType -eq 'headnode') {
-        Initialize-ClusterManagementProgram -TerminationPolicy $Env:TerminationPolicy -ClusterManagementDataFile $Env:ClusterManagementDataFile -DesiredCapacity $Env:DesiredCapacity -MJSStatusLogFile $Env:MJSStatusLogFile
+        Initialize-ClusterManagementProgram -TerminationPolicy $Env:TerminationPolicy -ClusterManagementDataFile $Env:ClusterManagementDataFile -DesiredCapacity $Env:DesiredCapacity -CustomDNSSuffix "$Env:CustomDNSSuffix" -EnablePublicIP "$Env:EnablePublicIP"
 
         Set-UserdataTask
     }

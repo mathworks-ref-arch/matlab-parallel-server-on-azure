@@ -1,4 +1,4 @@
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 from typing import Dict, Type
 
@@ -34,9 +34,12 @@ AUTOSCALING_ENABLED = "autoscaling_enabled"
 AUTOTERMINATION_ENABLED = "autotermination_enabled"
 INITIAL_TERMINATION_POLICY = "initial_termination_policy"
 INITIAL_DESIRED_CAPACITY = "initial_desired_capacity"
-MJS_STATUS_LOG_FILE = "mjs_status_log_file"
+CUSTOM_DNS_SUFFIX = "custom_dns_suffix"
+USE_PRIVATE_IP_MAPPING = "use_private_ip_mapping"
 
 # Cluster management program related variables
 CLUSTER_MANAGEMENT_LOG_FILE = "C:\\ProgramData\\MathWorks\\clustermanagement.log"
+MJS_STATUS_LOG_FILE = "C:\\ProgramData\\MathWorks\\mjs_status_transitions.log"
 MAX_LOG_FILE_SIZE = 1e6
 MAX_LOG_BACKUP_FILES = 5
+HEALTH_CHECK_GRACE_PERIOD_SECONDS = 600

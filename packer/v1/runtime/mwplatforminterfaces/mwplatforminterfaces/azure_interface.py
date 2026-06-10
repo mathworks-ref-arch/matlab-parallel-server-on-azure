@@ -11,10 +11,11 @@ from azure.core.exceptions import HttpResponseError
 from azure.identity import ManagedIdentityCredential
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.resource import ResourceManagementClient
+from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource.resources.models import TagsPatchResource
 from azure.mgmt.compute.models import (
     VirtualMachineScaleSet,
-    VirtualMachineScaleSetVMListResult,
+    VirtualMachineScaleSetVM,
     VirtualMachineScaleSetVMInstanceRequiredIDs,
 )
 
@@ -46,13 +47,15 @@ class AzureInterface(AbstractCloudInterface):
 
     _compute_client: ComputeManagementClient
     _resource_client: ResourceManagementClient
+    _network_client: NetworkManagementClient
 
     _resource_group: str
     _vmss_name: str
 
     _workers_per_node: int
 
-    def __init__(self) -> None:
+    def __init__(self, custom_dns_suffix: str = None,
+        use_private_ip_mapping: bool = False,) -> None:
         """Create AzureInterface object and set all necessary attributes.
 
         Resource group information is retrieved from the instance meta-data
@@ -78,6 +81,9 @@ class AzureInterface(AbstractCloudInterface):
         # Setting all necessary attributes
         identity = ManagedIdentityCredential()
         self._compute_client = ComputeManagementClient(identity, data["subscriptionId"])
+        self._network_client = NetworkManagementClient(
+            identity, data["subscriptionId"]
+        )
 
         self._resource_client = ResourceManagementClient(
             identity, data["subscriptionId"]
@@ -89,6 +95,9 @@ class AzureInterface(AbstractCloudInterface):
         self._headnode_tags = get_headnode_tags_dict(data["tags"])
 
         self._headnode_resource_id = data["resourceId"]
+
+        self._custom_dns_suffix = custom_dns_suffix
+        self._use_private_ip_mapping = use_private_ip_mapping
 
         self._vmss_name = next(
             vmss.name
@@ -435,7 +444,7 @@ class AzureInterface(AbstractCloudInterface):
 
         return None
 
-    def _get_vm_instances(self) -> Iterable[VirtualMachineScaleSetVMListResult]:
+    def _get_vm_instances(self) -> Iterable[VirtualMachineScaleSetVM]:
         try:
             vms = self._compute_client.virtual_machine_scale_set_vms.list(
                 self._resource_group, self._vmss_name
@@ -448,14 +457,26 @@ class AzureInterface(AbstractCloudInterface):
         return []
 
     def _get_host_to_id(self) -> dict:
-        """Get a mapping between instances private hostname and their id.
+        """Get a mapping between instances private hostname
+            or IP addresses and their instance ids.
 
         Returns:
-            host_to_id (dict): Hostname to instance id dictionary.
+            host_to_id (dict): Hostname or private IPs to
+            instance id dictionary.
         """
+        if self._use_private_ip_mapping:
+            return self.__get_private_ip_to_id()
+
         host_to_id = {}
+
         for vm in self._get_vm_instances():
-            host_to_id[vm.os_profile.computer_name] = vm.instance_id
+            hostname = vm.os_profile.computer_name
+
+            if self._custom_dns_suffix:
+                # If a custom DNS suffix is configured, append it to the hostname
+                hostname = f"{hostname}.{self._custom_dns_suffix}"
+
+            host_to_id[hostname] = vm.instance_id
 
         return host_to_id
 
@@ -540,6 +561,53 @@ class AzureInterface(AbstractCloudInterface):
                 print(e, file=sys.stderr)
 
         return None
+    
+    def __get_private_ip_to_id(self) -> dict:
+        """Creates a dictionary mapping private IP addresses of VMSS instances
+        to their instance IDs.
+
+        Returns:
+            private_ip_to_id: Mapping of private IP addresses to instance IDs
+        """
+        private_ip_to_id = {}
+        try:
+            # List all NICs for the VMSS
+            nic_list = self._network_client.network_interfaces.list_virtual_machine_scale_set_network_interfaces(
+                self._resource_group, self._vmss_name
+            )
+
+            # Pattern used to extract instance ID from the resource ID of the VM that is attached to the NIC
+            instance_id_pattern = re.compile(r"/virtualMachines/(\d+)")
+
+            for nic in nic_list:
+                instance_id = None
+                if not nic.virtual_machine:
+                    continue
+
+                # Extract the instance_id from the virtual_machine.id string
+                match = instance_id_pattern.search(nic.virtual_machine.id)
+
+                if not match:
+                    continue
+
+                instance_id = match.group(1)
+
+                primary_ip = next(
+                    (
+                        ip_config.private_ip_address
+                        for ip_config in nic.ip_configurations
+                        if ip_config.primary
+                    ),
+                    None,
+                )
+
+                if primary_ip and instance_id:
+                    private_ip_to_id[primary_ip] = instance_id
+
+        except HttpResponseError as e:
+            print(e, file=sys.stderr)
+
+        return private_ip_to_id
 
 
 def get_kv(iterable, key, val, filt):

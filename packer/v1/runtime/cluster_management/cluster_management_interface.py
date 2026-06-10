@@ -1,4 +1,4 @@
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 import json
 import os
@@ -126,20 +126,19 @@ class ClusterManagementProgramInterface:
             The file will only be updated when update_cluster_management_data_file()
             is called.
         """
-        if self._cluster_management_config[MJS_STATUS_LOG_FILE]:
-            if not self._cluster_management_state[WAS_MJS_BUSY]:
-                try:
-                    with open(
-                        self._cluster_management_config[MJS_STATUS_LOG_FILE], "r"
-                    ) as file:
-                        log_content = file.read()
-                    if "MJS busy" in log_content:
-                        print(
-                            "MJS found to be busy. Recording this in the cluster management data file."
-                        )
-                        self.update_state({WAS_MJS_BUSY: True})
-                except FileNotFoundError:
-                    pass
+        if not self._cluster_management_state[WAS_MJS_BUSY]:
+            try:
+                with open(
+                    MJS_STATUS_LOG_FILE, "r"
+                ) as file:
+                    log_content = file.read()
+                if "MJS busy" in log_content:
+                    print(
+                        "MJS found to be busy. Recording this in the cluster management data file."
+                    )
+                    self.update_state({WAS_MJS_BUSY: True})
+            except FileNotFoundError:
+                pass
 
     def _initialize_state_after_reboot(self) -> None:
         """
@@ -166,15 +165,13 @@ class ClusterManagementProgramInterface:
                         WAS_MJS_BUSY: False,
                     }
                 )
-                mjs_status_log_file = self._cluster_management_config[
-                    MJS_STATUS_LOG_FILE
-                ]
-                if os.path.exists(mjs_status_log_file):
+                
+                if os.path.exists(MJS_STATUS_LOG_FILE):
                     print(
-                        f"Deleting {mjs_status_log_file} as it may contain stale timestamps. "
+                        f"Deleting {MJS_STATUS_LOG_FILE} as it may contain stale timestamps. "
                         "MJS will recreate the logs once it is up and running."
                     )
-                    os.remove(mjs_status_log_file)
+                    os.remove(MJS_STATUS_LOG_FILE)
             else:
                 if self._cluster_management_state[FIRST_RUN_AFTER_REBOOT]:
                     self.update_state({FIRST_RUN_AFTER_REBOOT: False})

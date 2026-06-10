@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 from mwplatforminterfaces import OSInterface
@@ -8,8 +8,12 @@ from mwplatforminterfaces import OSInterface
 from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
+import os
 import sys
 import time
+
+# Add parent dir to path since constants file is in parent dir
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from constants import STATUS_SUCCESS, STATUS_CLUSTER_ISSUE
 

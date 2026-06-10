@@ -9,7 +9,7 @@ The Initialize-MJS function configures the necessary security files, certificate
 Initialize-MJS
 
 .NOTES
-    Copyright 2022-2025 The MathWorks, Inc.
+    Copyright 2022-2026 The MathWorks, Inc.
 #>
 
 function Initialize-MJS {
@@ -34,7 +34,7 @@ function Initialize-MJS {
 
         Write-Output '===Creating profile==='
         $WinTemp = [System.Environment]::GetEnvironmentVariable('TEMP', 'Machine')
-        $MJSHostname = $Env:HeadnodeHostname
+        $MJSHostname = $Env:ExternalHostname
         $ProfileFile = "$WinTemp\$Env:JobManagerName.mlsettings"
         & "$Env:ParallelToolBoxRoot\createProfile.bat" -name "$Env:JobManagerName" -host $MJSHostname -certfile $Env:CertFile -outfile "$ProfileFile"
 
