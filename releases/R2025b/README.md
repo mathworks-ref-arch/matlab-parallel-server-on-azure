@@ -4,11 +4,9 @@
 
 Click the **Deploy to Azure** button below to deploy the cloud resources on Azure&reg;. Doing so opens the Azure Portal in your web browser.
 
-| Create Virtual Network | Use Existing Virtual Network |
-| --- | --- |
-| Use this option to deploy the resources in a new virtual network<br><br><a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2025b%2Fazuredeploy-R2025b.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton"/></a></br></br> | Use this option to deploy the resources in an existing virtual network <br><br><a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2025b%2Fazuredeploy-existing-vnet-R2025b.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton"/></a></br></br> |
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmathworks-ref-arch%2Fmatlab-parallel-server-on-azure%2Fmaster%2Freleases%2FR2025b%2Fazuredeploy-R2025b.json" target="_blank"><img src="https://aka.ms/deploytoazurebutton"/></a>
 
-> Cluster Platform: Windows Server 2022
+> Cluster Platform: Windows Server 2025 (MATLAB R2026a), Windows Server 2022 (MATLAB R2025b and earlier)
 
 > MATLAB&reg; Release: R2025b
 
@@ -28,11 +26,15 @@ Clicking the **Deploy to Azure** button opens the "Custom deployment" page in yo
 | **Worker Vm Size** | Azure virtual machine (VM) size to use for the workers. By default, the heap memory for all worker process is set between 1024 MiB and a maximum of a quarter of the VM memory, depending on the number of MATLAB workers on the VM. See https://learn.microsoft.com/azure/virtual-machines/sizes for a list of VMs. |
 | **Use Spot Instances For Worker Nodes** | Option indicating whether to enable Azure Spot Virtual Machines for worker nodes. For more information, refer to the FAQ section in the deployment README. |
 | **Database Volume Size** | Size in GB of the volume to store the database files. All job and task information, including input and output data, is stored on this volume and so it must have enough capacity to store the expected amount of data. If set to 0, no volume is created and the root volume of the VM is used for the database. |
+| **Virtual Network Resource ID** | (Optional) Resource ID of an existing virtual network to deploy your cluster into. You can find this under the Properties of your virtual network. If left empty, a new virtual network with a default subnet is created. |
+| **Subnet Name** | (Optional) Name of an existing subnet within your chosen virtual network to deploy your cluster into. Required if a Virtual Network Resource ID is specified. |
+| **New Vnet Address Space** | Address space for the new virtual network, specified in CIDR notation (e.g., 10.0.0.0/16). Only used if Virtual Network Resource ID is left empty. |
+| **New Subnet Address Space** | Address space for the new subnet, specified in CIDR notation (e.g., 10.0.0.0/24). Only used if Virtual Network Resource ID is left empty. |
+| **Create Public IP Address** | Choose whether to attach Public IPv4 addresses to the head-node and worker nodes. For details about using a private network configuration, see [Configure Private Network](#configure-private-network). |
 | **Client IP Address List** | Comma-separated list of IPv4 address ranges that can be used to access the cluster from MATLAB. This must be a valid IP CIDR range. Example: 10.0.0.0/16,12.34.5.0/24 or 34.56.78.10/32. To build a specific range, you can use this tool: https://www.ipaddressguide.com/cidr. To determine which address is appropriate, contact your IT administrator. |
+| **Custom DNS Search Suffix** | (Optional) If deploying in an existing virtual network with a custom DNS setup, enter the DNS search suffix to use, for example corp.mycompany.internal. This enables headnode and workers to identify themselves using full DNS names of the form: \<computer_name>.corp.mycompany.internal. Ensure that the cluster nodes are auto-registered with the DNS service to allow name resolution. If left empty, head node and worker nodes will use their Private IPv4 addresses for communication. |
 | **Admin Username** | Admin username for the cluster. To avoid deployment errors, conform to the list of [Disallowed Values (Microsoft)](https://learn.microsoft.com/rest/api/compute/virtual-machines/create-or-update?tabs=HTTP#osprofile) for adminUsername. |
 | **Admin Password** | Choose the password for the admin user of the cluster. This password and the chosen admin username are required to log in into any VM in the cluster using RDP or SSH. For the deployment to succeed, your password must meet Azure's password requirements. See [Password requirements when creating a VM](https://learn.microsoft.com/azure/virtual-machines/windows/faq?WT.mc_id=Portal-fx#what-are-the-password-requirements-when-creating-a-vm-) for information on the password requirements. |
-| **Virtual Network Resource ID** | Resource ID of an existing virtual network to deploy your cluster into. You can find ID this under the properties of your virtual network. Specify this parameter only when deploying with the Existing Virtual Network option. |
-| **Subnet Name** | Name of an existing subnet within your virtual network to deploy your cluster into. Specify this parameter only when deploying with the Existing Virtual Network option. |
 | **License Server** | License manager for MATLAB, specified as a string in the form port@hostname. If not specified, online licensing is used. Otherwise, license manager must be accessible from the specified virtual network and subnets. For more information, see https://github.com/mathworks-ref-arch/license-manager-for-matlab-on-azure. |
 | **MJS Security Level** | Security level for the cluster. Level 0: Any user can access any jobs and tasks. Level 1: Accessing other users' jobs and tasks issues a warning. However, all users can still perform all actions. Level 2: Users must enter a password to access their jobs and tasks. The job owner can grant access to other users. |
 | **Enable Autoscaling** | Option indicating whether VM autoscaling is enabled. For more information about autoscaling, refer to the 'Use Autoscaling' section in the deployment README. |
@@ -87,6 +89,66 @@ You can remove the resource group and all associated resources when you are done
     ![Resource Group Delete](../../img/Resource_Group_Delete.png)
 
 # Additional Information
+
+## Configure Private Network
+
+To deploy the MATLAB Parallel Server cluster without public IP addresses, set the `createPublicIPAddress` parameter to `No`. This prevents creation of public IPv4 addresses for the head node and VMSS worker nodes. The head node and worker nodes use their Private IPv4 addresses to communicate with each other and MATLAB clients. Ensure to meet the following requirements before deploying in a private networking configuration:
+
+### Client Access
+
+Specify the private IPv4 addresses of the MATLAB client(s) that will access the cluster using the `clientIPAddressList` parameter. This accepts a comma-separated list of IPv4 addresses or CIDR ranges. **Example:** `10.0.1.0/24,10.0.2.50`. You can leave this parameter empty if the MATLAB clients are in the same (or peered) virtual network as the cluster.
+
+If the MATLAB Client is in your on-premises network, ensure that your on-premises network has an existing connection to Azure.
+
+### Outbound Internet Access
+
+The head node and worker nodes require outbound internet access for:
+- **Online licensing**: Access to `*.mathworks.com` for MATLAB Parallel Server licensing.
+- **[Autoscaling](#use-autoscaling) and [auto-termination](#automatically-terminate-the-matlab-parallel-server-cluster)**.
+- **Cluster storage account**: Access to the storage account created during deployment to upload the cluster profile and other required files. The file share in this account also acts as a [shared filesystem](#cluster-file-system-and-storage) for the worker nodes.
+
+When the template creates a new virtual network, the `defaultOutboundAccess` [property](https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access) is set to `true` for the default subnet, enabling outbound internet connectivity. If you convert the newly created subnet to a [private subnet](https://learn.microsoft.com/azure/virtual-network/ip-services/default-outbound-access#how-to-configure-private-subnets), you must provision an explicit outbound connectivity method (e.g. NAT Gateway) to allow internet access for the cluster.
+
+If you are using an existing virtual network instead, ensure that it is configured to allow outbound internet access for the head node and worker nodes.  
+
+### Azure Firewall Configuration
+
+If your virtual network uses Azure Firewall to control outbound traffic, ensure that the following FQDNs are white-listed:
+
+| FQDN | Purpose |
+|------|---------|
+| `login.microsoftonline.com` | Azure managed identity authentication |
+| `management.azure.com` | Azure Resource Manager API calls (for autoscaling and auto-termination) |
+| `*.blob.core.windows.net` | Azure Blob Storage access |
+| `*.file.core.windows.net` | Azure File Storage access |
+| `*.mathworks.com` | MATLAB online licensing (if applicable) |
+
+See: https://learn.microsoft.com/en-us/azure/firewall/tutorial-firewall-deploy-portal for more information on configuring Azure Firewall rules.
+
+### DNS Resolution
+
+To use a custom DNS server instead of Azure-provided DNS in the Virtual Network containing the cluster, set the `customDNSSearchSuffix` parameter to your domain's DNS search suffix. If this parameter is left empty, the instances use Private IP addresses instead of hostnames for communication. For MATLAB R2022b and older releases, see the [Support for MATLAB release R2022b and older](#support-for-matlab-release-r2022b-and-older) section for additional configuration steps.
+
+**Example:** With `customDNSSearchSuffix` parameter set to `mycorp.internal.com`, worker nodes will communicate with each other and MATLAB Clients using FQDNs of the form `<computer_name>.mycorp.internal.com`.
+
+> **Warning:** Worker registration with the head node and job submissions will fail if DNS resolution is not properly configured. 
+>
+> Before deploying the cluster:
+> - Test DNS resolution in your virtual network
+> - Ensure the private DNS zone linked to the virtual network is configured to automatically register DNS A records for new virtual machines
+> 
+> For more information, see: [Configure DNS name resolution for Azure virtual networks](https://learn.microsoft.com/azure/virtual-network/virtual-networks-name-resolution-for-vms-and-role-instances?tabs=redhat#name-resolution-that-uses-your-own-dns-server)
+
+### Support for MATLAB release R2022b and older
+
+MATLAB R2022b and older releases do not support the usage of private IP addresses for cluster communication. For these releases, we use the [computer names](https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-viewing-and-modifying-hostnames#azure-portal) of the head node and worker nodes for inter-cluster and client-cluster communication, unless a `customDNSSearchSuffix` is configured.
+
+When the `customDNSSearchSuffix` parameter is empty, the cluster uses short hostnames (e.g., `parallelserver-headnode`) that are not resolvable outside its own network. Your client configuration depends on its location.
+- **MATLAB Client in the Same Virtual Network**: No extra configuration is needed. The MATLAB client can resolve the cluster's short hostnames using Azure's default DNS.
+- **MATLAB Client in a Peered Virtual Network**: You must enable name resolution across the networks so that the MATLAB client can resolve hostnames of the cluster nodes. This can be done using Azure Private Zones:
+    1.  Create an [Azure Private DNS zone](https://learn.microsoft.com/en-us/azure/dns/private-dns-privatednszone).
+    2.  [Link the zone to both the cluster's and the client's virtual networks](https://learn.microsoft.com/en-us/azure/dns/private-dns-getstarted-portal#link-the-virtual-network), ensuring auto-registration is enabled.
+    3.  Set the `customDNSSearchSuffix` parameter to the name of your private DNS zone.
 
 ## Port Requirements 
 
@@ -149,8 +211,10 @@ If your resource group fails to deploy, check the Deployments section of the Res
 
 If the resource group deployed successfully but you are unable to validate the cluster, check the logs on the instances to diagnose the error. The deployment logs are output to C:\ProgramData\MathWorks\ on the instance nodes. The cluster logs are output to C:\ProgramData\MJS\ and the system startup logs are output to C:\ProgramData\MathWorks\startup.log on every instance of the cluster.
 
+If your cluster is unable to create new workers, you encounter scaling errors. To troubleshoot these issues, see [Resolve Scaling Issues in the Cloud](https://www.mathworks.com/help/matlab-parallel-server/resolve-scaling-issues-in-the-cloud.html).
+
 ----
 
-Copyright 2018-2025 The MathWorks, Inc.
+Copyright 2018-2026 The MathWorks, Inc.
 
 ----
