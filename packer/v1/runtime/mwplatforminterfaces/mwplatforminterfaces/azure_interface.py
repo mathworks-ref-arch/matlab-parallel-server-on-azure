@@ -22,7 +22,7 @@ from azure.mgmt.compute.models import (
 import requests
 import sys, re
 from datetime import datetime, timezone
-from typing import Any, Dict, Iterable, List, Set
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 IMDS_URL = "http://169.254.169.254"
 
@@ -70,7 +70,18 @@ class AzureInterface(AbstractCloudInterface):
             url = f"{IMDS_URL}{query}?api-version=2021-02-01"
             headers = {"Metadata": "True"}
             proxies = {"http": None, "https": None}
-            return requests.get(url, headers=headers, proxies=proxies).json()
+            try:
+                return requests.get(
+                    url, headers=headers, 
+                    proxies=proxies, 
+                    timeout=5
+                ).json()
+            except requests.exceptions.RequestException as e:
+                print(
+                    f"Request to instance metadata endpoint {url} failed: {e}",
+                    file=sys.stderr,
+                )
+                raise
 
         # Turn headnode tags from a string into a dictionary
         def get_headnode_tags_dict(tags: str) -> dict:
@@ -139,14 +150,22 @@ class AzureInterface(AbstractCloudInterface):
                 )
                 tags = self.__update_vmss_tags({MAX_NODES_TAG: tags[DESIRED_NODES_TAG]})
 
+            vms = self._get_vm_instances()
+
             info = CloudCapacity(
                 desired_nodes=int(tags[DESIRED_NODES_TAG]),
                 minimum_nodes=int(tags[MIN_NODES_TAG]),
                 maximum_nodes=int(tags[MAX_NODES_TAG]),
                 current_nodes=sum(
                     1
-                    for vm in self._get_vm_instances()
-                    if vm.provisioning_state in ("Creating", "Succeeded")
+                    for vm in vms
+                    if (
+                        vm.provisioning_state.lower() == "creating"
+                        or (
+                            vm.provisioning_state.lower() == "succeeded"
+                            and self._get_power_state(vm) in ("starting", "running")
+                        )
+                    )
                 ),
                 workers_per_node=self._workers_per_node,
             )
@@ -197,16 +216,29 @@ class AzureInterface(AbstractCloudInterface):
         """
         nodes_hostnames = set()
         current_time = datetime.now(timezone.utc)
+
+        # Mapping between nodes hostname and their instance IDs
         host_to_id = self._get_host_to_id()
-        for hostname, instance_id in host_to_id.items():
-            vm = self._compute_client.virtual_machine_scale_set_vms.get(
-                self._resource_group, self._vmss_name, instance_id
-            )
+
+        # Mapping instance IDs to hostnames
+        id_to_host = {i: h for h, i in host_to_id.items()}
+
+        for vm in self._get_vm_instances():
+            # We extract the hostname that is in use
+            hostname = id_to_host.get(vm.instance_id)
+            if not hostname:
+                continue
 
             vm_uptime = (current_time - vm.time_created).total_seconds()
 
             if (
-                vm.provisioning_state == "Succeeded"
+                (
+                    vm.provisioning_state.lower() == "creating"
+                    or (
+                        vm.provisioning_state.lower() == "succeeded"
+                        and self._get_power_state(vm) in ("starting", "running")
+                    )
+                )
                 and vm_uptime > grace_period_seconds
             ):
                 nodes_hostnames.add(hostname)
@@ -447,7 +479,7 @@ class AzureInterface(AbstractCloudInterface):
     def _get_vm_instances(self) -> Iterable[VirtualMachineScaleSetVM]:
         try:
             vms = self._compute_client.virtual_machine_scale_set_vms.list(
-                self._resource_group, self._vmss_name
+                self._resource_group, self._vmss_name, expand="instanceView"
             )
             return vms
 
@@ -455,6 +487,18 @@ class AzureInterface(AbstractCloudInterface):
             print(e, file=sys.stderr)
 
         return []
+    
+    def _get_power_state(self, vm: VirtualMachineScaleSetVM) -> Optional[str]:
+        """Extract PowerState from instance view statuses.
+           Instance View contains statuses in the form 
+           'PowerState/running', etc.
+        """
+        if vm.instance_view and vm.instance_view.statuses:
+            for status in vm.instance_view.statuses:
+                if status.code and status.code.startswith("PowerState/"):
+                    return status.code.split("/", 1)[1]
+
+        return None
 
     def _get_host_to_id(self) -> dict:
         """Get a mapping between instances private hostname

@@ -115,7 +115,7 @@ variable "NVIDIA_DRIVER_INSTALLER_URL" {
 
 variable "PYTHON_INSTALLER_URL" {
   type        = string
-  default     = "https://www.python.org/ftp/python/3.10.5/python-3.10.5-amd64.exe"
+  default     = "https://www.python.org/ftp/python/3.14.4/python-3.14.4-amd64.exe"
   description = "The URL to install python into the target machine image."
 }
 

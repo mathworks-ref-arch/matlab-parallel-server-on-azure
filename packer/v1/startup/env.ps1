@@ -33,4 +33,9 @@ $Env:MJSAdminPasswordFile = "$Env:SecurityRoot\initial_admin_password"
 $Env:ResourceID = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -Uri "http://169.254.169.254/metadata/instance/compute/resourceId?api-version=2021-02-01&format=text"
 $Env:LocalIPv4 = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -Uri "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/privateIpAddress?api-version=2021-02-01&format=text"
 $Env:LocalHostname = Invoke-RestMethod -Headers @{"Metadata"="true"} -Method GET -Uri "http://169.254.169.254/metadata/instance/compute/osProfile/computerName?api-version=2021-02-01&format=text"
-$Env:PublicIPv4 = (Invoke-RestMethod -Headers @{Metadata="true"} -Uri "http://169.254.169.254/metadata/loadbalancer?api-version=2020-10-01").loadbalancer.publicIpAddresses[0].frontendIpAddress
+
+try {
+    $Env:PublicIPv4 = (Invoke-RestMethod -Headers @{Metadata="true"} -Uri "http://169.254.169.254/metadata/loadbalancer?api-version=2020-10-01").loadbalancer.publicIpAddresses[0].frontendIpAddress
+} catch {
+    $Env:PublicIPv4 = ''
+}

@@ -6,7 +6,7 @@
 .EXAMPLE
     Remove-TemporaryFiles
 .NOTES
-    Copyright 2024-2025 The MathWorks, Inc.
+    Copyright 2024-2026 The MathWorks, Inc.
     The $ErrorActionPreference variable is set to 'Stop' to ensure that any errors encountered during the function execution will cause the script to stop and throw an error.
 #>
 
@@ -45,10 +45,44 @@ function Remove-SourceFiles {
     }
 }
 
+function Remove-DotNet6Runtimes {
+    Write-Output 'Starting Remove-DotNet6Runtimes...'
+
+    # List of .NET 6 runtime folders to target
+    $runtimeFolders = @(
+        "$env:ProgramFiles\dotnet\shared\Microsoft.NETCore.App",
+        "$env:ProgramFiles\dotnet\shared\Microsoft.AspNetCore.App",
+        "$env:ProgramFiles (x86)\dotnet\shared\Microsoft.NETCore.App",
+        "$env:ProgramFiles (x86)\dotnet\shared\Microsoft.AspNetCore.App"
+    )
+
+    foreach ($path in $runtimeFolders) {
+        if (-not (Test-Path $path)) {
+            Write-Output "Path not found: $path"
+            continue
+        }
+
+        Get-ChildItem -Path $path -Directory | ForEach-Object {
+            # Check if the directory name matches a .NET 6 version pattern (e.g., 6.0, 6.0.1)
+            if ($_.Name -match '^6\.\d+(\.\d+)?$') {
+                Write-Output "Removing .NET 6 runtime: $($_.FullName)"
+                try {
+                    Remove-Item -Path $_.FullName -Recurse -Force
+                } catch {
+                    Write-Output "WARNING: Failed to remove: $($_.FullName) - $_"
+                }
+            }
+        }
+    }
+
+    Write-Output 'Done with Remove-DotNet6Runtimes.'
+}
+
 
 function Cleanup {
     Remove-SourceFiles -Path 'X:'
     Remove-TemporaryBuildFiles
+    Remove-DotNet6Runtimes
 }
 
 try {

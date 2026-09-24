@@ -7,16 +7,45 @@ from pathlib import Path
 import re
 import subprocess
 import sys
-from typing import Dict, NamedTuple, Set
+from typing import Dict, NamedTuple, Optional, Set
 
 # Limit the number of concurrent calls to MJS
 MJS_SEM = asyncio.Semaphore(20)
 
 # Seconds to wait for stopworker execution
-STOPWORKER_TIMEOUT = 25
+STOPWORKER_TIMEOUT = 35
 
 # Seconds to wait for nodestatus execution
-NODESTATUS_TIMEOUT = 15
+NODESTATUS_TIMEOUT = 20
+
+# Seconds to wait for synchronous MJS command-line tools (resize, mjs, 
+# stopworker, etc.) to complete. Without a bound, a single unresponsive command
+# blocks the cluster management task indefinitely
+SUBPROCESS_TIMEOUT = 20
+
+
+def _run_with_timeout(
+    args, timeout: int = SUBPROCESS_TIMEOUT, **kwargs
+) -> Optional[subprocess.CompletedProcess]:
+    """Run a subprocess with a timeout, logging and returning None if it expires.
+
+    Wraps subprocess.run so that a hung command-line tool cannot block the
+    cluster management program forever. Callers treat a None result as a
+    failure and fall back to their usual safe default.
+
+    Args:
+        args: Command and arguments passed through to subprocess.run.
+        timeout (int): Seconds to wait before terminating the command.
+        **kwargs: Additional keyword arguments forwarded to subprocess.run.
+
+    Returns:
+        The CompletedProcess on success, or None if the command timed out.
+    """
+    try:
+        return subprocess.run(args, timeout=timeout, **kwargs)
+    except subprocess.TimeoutExpired:
+        print(f"Command {args} timed-out after {timeout}s.", file=sys.stderr)
+        return None
 
 
 class ClusterCapacity(NamedTuple):
@@ -129,7 +158,9 @@ class AbstractOSInterface(ABC):
         executable = self._get_resize_executable()
         args = ["update", maxworkers_flag, str(maximum_workers)]
 
-        result = subprocess.run([executable, *args], capture_output=True)
+        result = _run_with_timeout([executable, *args], capture_output=True)
+        if result is None:
+            return False
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
 
@@ -177,14 +208,17 @@ class AbstractOSInterface(ABC):
         """
         mjs_process_name = "mjsd.exe"
 
-        try:
-            output = subprocess.check_output(["tasklist"], text=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to get task list: {e}")
+        result = _run_with_timeout(
+            ["tasklist"], capture_output=True, text=True
+        )
+        if result is None:
+            return False
+        if result.returncode != 0:
+            print(f"Failed to get task list: {result.stderr}")
             return False
 
         # Search for the process name in the command output
-        if re.search(rf"\b{mjs_process_name}\b", output, re.IGNORECASE):
+        if re.search(rf"\b{mjs_process_name}\b", result.stdout, re.IGNORECASE):
             return True
         return False
 
@@ -196,10 +230,12 @@ class AbstractOSInterface(ABC):
         """
         nodestatus_executable = self._get_nodestatus_executable()
         args = ["-json"]
-        result = subprocess.run(
+        result = _run_with_timeout(
             [nodestatus_executable, *args], capture_output=True, text=True
         )
 
+        if result is None:
+            return False
         if result.returncode != 0:
             print(result.stdout, file=sys.stderr)
             return False
@@ -225,8 +261,10 @@ class AbstractOSInterface(ABC):
         if not self.is_mjs_running():
             return True
         args = ["stop", "-cleanPreserveJobs"]
-        result = subprocess.run([mjs_executable, *args], capture_output=True, text=True)
-        if result.returncode != 0:
+        result = _run_with_timeout(
+            [mjs_executable, *args], capture_output=True, text=True
+        )
+        if result is None or result.returncode != 0:
             return False
 
         return True
@@ -241,7 +279,9 @@ class AbstractOSInterface(ABC):
         executable = self._get_stopworker_executable()
         args = ["-all"]
 
-        result = subprocess.run([executable, *args], capture_output=True)
+        result = _run_with_timeout([executable, *args], capture_output=True)
+        if result is None:
+            return False
         if result.returncode == 0:
             return True
 
@@ -264,10 +304,10 @@ class AbstractOSInterface(ABC):
             if data:
                 jobmanager = data["name"]
                 args = ["-name", jobmanager, "-cleanPreserveJobs"]
-                result = subprocess.run(
+                result = _run_with_timeout(
                     [stop_jobmanager_executable, *args], capture_output=True, text=True
                 )
-                if result.returncode != 0:
+                if result is None or result.returncode != 0:
                     return False
         return True
 
@@ -309,7 +349,9 @@ class AbstractOSInterface(ABC):
         executable = self._get_resize_executable()
         args = ["status"]
 
-        result = subprocess.run([executable, *args], capture_output=True)
+        result = _run_with_timeout([executable, *args], capture_output=True)
+        if result is None:
+            return None
         if result.returncode == 0:
             output = json.loads(result.stdout)
             if output["jobManagers"]:
@@ -395,6 +437,8 @@ class AbstractOSInterface(ABC):
                     print(stdout, stderr, file=sys.stderr)
 
             except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
                 print(
                     f"Command {executable} {args} timed-out after "
                     f"{NODESTATUS_TIMEOUT}s.",
@@ -433,7 +477,9 @@ class AbstractOSInterface(ABC):
                 else:
                     print(stdout, stderr, file=sys.stderr)
 
-            except asyncio.TimeoutError as te:
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.wait()
                 print(
                     f"Command {executable} {args} timed-out after "
                     f"{STOPWORKER_TIMEOUT}s.",

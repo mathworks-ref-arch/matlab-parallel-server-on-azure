@@ -108,12 +108,25 @@ function Start-MJS {
 
     $MJSOpts = @(
         '-hostname', "$MJSHostname",
-        '-enablepeerlookup',
         '-cleanPreserveJobs',
-        '-sendactivitynotifications',
-        '-scriptroot', "$Env:MJSBusyIdleScripts",
         '-disableelevate'
     )
+
+    If ($Env:MATLABRelease -le 'R2022b') {
+        $MJSOpts += (
+            '-enablepeerlookup'
+        )
+    }
+
+    # The following flags are needed to support the on_idle termination policy
+    # Since these policies can dynamically change, we always add these flags
+    # to MJSOpts unless user has explicitly disabled the auto-termination feature
+    if ("$Env:TerminationPolicy" -ne "Disable auto-termination") {
+        $MJSOpts += (
+            '-sendactivitynotifications',
+            '-scriptroot', "$Env:MJSBusyIdleScripts"
+        )
+    }
 
     # Stop MJS if it is already running
     if ($NodeType -eq 'headnode') {

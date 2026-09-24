@@ -1,4 +1,4 @@
-# Copyright 2024 The MathWorks, Inc.
+# Copyright 2024-2026 The MathWorks, Inc.
 
 from mwplatforminterfaces import CloudInterface
 
@@ -115,6 +115,10 @@ def backup_policy(
         ]
         or "never"
     )
+    first_run_after_reboot = cluster_management_interface.cluster_management_state[
+        FIRST_RUN_AFTER_REBOOT
+    ]
+
     if termination_policy == "":
         print(
             "mw-autoshutdown tag value is empty or invalid. Resetting it to last known value."
@@ -128,6 +132,7 @@ def backup_policy(
         policy_reset = cloud_interface.set_cluster_termination_policy(
             termination_policy
         )
+
         if not policy_reset:
             print(
                 f"~ Failed to update mw-autoshutdown tag to {termination_policy}.",
@@ -135,16 +140,55 @@ def backup_policy(
             )
 
     else:
-        # If last_termination_policy is different from the current one, save the current one as backup
+        # If last_termination_policy is different from the current one,
+        # save the current one as backup
         if termination_policy != last_termination_policy:
             print(
-                f"Backing up termination policy {termination_policy} in the cluster management data file."
+                f"Backing up termination policy {termination_policy} in \
+                the cluster management data file."
             )
-            cluster_management_interface.update_state(
-                {LAST_TERMINATION_POLICY: termination_policy}
+        elif first_run_after_reboot and is_timestamp_policy(termination_policy):
+            # First run after boot and the last termination policy matches the current one.
+            # A timestamp policy that survived the reboot is stale (it was scheduled
+            # relative to the previous boot), so reset it to the initial policy.
+            # This step will run in all subsequent reboots whenever the mw-autoshutdown tag
+            # is stale.
+            print(
+                f"Termination policy {termination_policy} is a stale timestamp from last "
+                f"boot. Resetting it to the initial policy {initial_termination_policy}."
             )
+            policy_reset = cloud_interface.set_cluster_termination_policy(
+                initial_termination_policy
+            )
+            if not policy_reset:
+                print(
+                    f"~ Failed to update mw-autoshutdown tag to {initial_termination_policy}.",
+                    file=sys.stderr,
+                )
+
+            termination_policy = initial_termination_policy
+
+    # Update the backed-up policy too so the schedule routine, which reads
+    # LAST_TERMINATION_POLICY, does not act on the stale timestamp.
+    cluster_management_interface.update_state(
+        {LAST_TERMINATION_POLICY: termination_policy}
+    )
 
     return termination_policy
+
+
+def is_timestamp_policy(termination_policy: str) -> bool:
+    """Return True if the termination policy is an RFC1123 timestamp.
+
+    A timestamp policy is an absolute shutdown time (e.g. produced by the
+    terminate_on_schedule routine) in the '%a, %d %b %Y %H:%M:%S %Z' format,
+    as opposed to a symbolic policy like 'never', 'on_idle' or 'After x hours'.
+    """
+    try:
+        datetime.strptime(termination_policy, "%a, %d %b %Y %H:%M:%S %Z")
+        return True
+    except ValueError:
+        return False
 
 
 def initialize_cluster_after_reboot(
@@ -192,7 +236,8 @@ def initialize_cluster_after_reboot(
         INITIAL_DESIRED_CAPACITY
     ]
     print(
-        f"> Cluster was terminated by auto-shutdown. Setting the cloud capacity to initial desired capacity of {initial_desired_capacity} nodes."
+        f"> Cluster was terminated by auto-shutdown. Setting the cloud capacity \
+          to initial desired capacity of {initial_desired_capacity} nodes."
     )
     set_cloud_capacity_status = cloud_interface.set_cloud_capacity(
         int(initial_desired_capacity)
@@ -213,7 +258,8 @@ def initialize_cluster_after_reboot(
 
 def print_status(start_or_end: str, policy_type: str) -> None:
     """
-    Helper function to print time-stamps before and after starting a termination routine/autoscaling.
+    Helper function to print time-stamps before and after starting
+    a termination routine/autoscaling.
     """
     current_time = (datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S %Z")
     if start_or_end == "start":

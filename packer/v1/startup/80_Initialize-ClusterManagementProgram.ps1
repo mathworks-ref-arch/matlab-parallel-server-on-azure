@@ -89,7 +89,10 @@ function Initialize-ClusterManagementProgram {
     # Creating a scheduled task to run the cluster management program every minute in the head-node
     $ClusterManagementProgramTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
     $ClusterManagementProgramAction = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument "/c `"$Env:ProgramFiles\MathWorks\cluster_management\cluster_management.py`""
-    Register-ScheduledTaskIfNotAvailable -TaskName 'Cluster management Task for MATLAB Parallel Server' -Action $ClusterManagementProgramAction -Trigger $ClusterManagementProgramTrigger
+    # Capping the run at 5 minutes lets Task Scheduler kill a stuck run so the schedule recovers.
+    $ClusterManagementProgramSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Seconds 300)
+    Register-ScheduledTaskIfNotAvailable -TaskName 'Cluster management Task for MATLAB Parallel Server' -Action $ClusterManagementProgramAction -Trigger $ClusterManagementProgramTrigger -Settings $ClusterManagementProgramSettings
+
 }
 
 function Set-UserdataTask {
