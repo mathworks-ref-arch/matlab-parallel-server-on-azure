@@ -113,6 +113,12 @@ variable "NVIDIA_DRIVER_INSTALLER_URL" {
   description = "The URL to install NVIDIA drivers into the target machine image."
 }
 
+variable "EDGE_INSTALLER_URL" {
+  type        = string
+  default     = "https://go.microsoft.com/fwlink/?linkid=2093437"
+  description = "The URL to install the Microsoft Edge browser. The default link always serves the current release."
+}
+
 variable "PYTHON_INSTALLER_URL" {
   type        = string
   default     = "https://www.python.org/ftp/python/3.14.4/python-3.14.4-amd64.exe"
@@ -334,6 +340,7 @@ build {
       "SPKGS=${var.SPKGS}",
       "POLYSPACE_PRODUCTS=${var.POLYSPACE_PRODUCTS}",
       "NVIDIA_DRIVER_INSTALLER_URL=${var.NVIDIA_DRIVER_INSTALLER_URL}",
+      "EDGE_INSTALLER_URL=${var.EDGE_INSTALLER_URL}",
       "PYTHON_INSTALLER_URL=${var.PYTHON_INSTALLER_URL}",
       "MATLAB_ROOT=${local.matlab_root}",
       "MSA_URL=${local.effective_msa_url}",
@@ -341,6 +348,9 @@ build {
       "AZURE_KEY_VAULT=${var.AZURE_KEY_VAULT}"
     ]
     scripts = "${local.build_scripts}"
+  }
+  provisioner "powershell" {
+    scripts = ["build/Enable-CertPaddingCheck.ps1"]
   }
   provisioner "powershell" {
     environment_vars = [
